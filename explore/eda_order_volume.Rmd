@@ -1,0 +1,104 @@
+---
+title: "Pharmacy Order Volume"
+author: "Brian Gulbis, PharmD, BCPS"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+    html_document:
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(themebg)
+
+x <- dirr::get_rds("../data/tidy/2018-05_order-volume")
+
+rm(x)
+
+pavilions <- c(
+    "HH Hermann",
+    "HH Cullen",
+    "HH Jones",
+    "HH HVI",
+    "HC Childrens"
+)
+
+```
+
+```{r, fig.cap="Number of original orders placed by hour of the day"}
+data_orders %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, building, order.hour) %>%
+    plot_ly(split = ~building) %>%
+    add_bars(x = ~order.hour, y = ~n) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = "Hour of day",
+            tick0 = 0,
+            dtick = 6
+        ),
+        yaxis = list(
+            title = "Number of orders"
+        )
+    )
+
+```
+
+```{r, fig.cap="Number of pharmacy order actions by hour of the day"}
+data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, building, action.hour) %>%
+    plot_ly(split = ~building) %>%
+    add_bars(x = ~action.hour, y = ~n) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = "Hour of day",
+            tick0 = 0,
+            dtick = 6
+        ),
+        yaxis = list(
+            title = "Number of order actions"
+        )
+    )
+```
+
+```{r, fig.cap="Number of pharmacy order actions by hour of the day, split by type of action"}
+data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, action.type, action.hour) %>%
+    mutate_at("action.type", as_factor) %>%
+    mutate_at("action.type", fct_rev) %>%
+    plot_ly(split = ~action.type) %>%
+    add_bars(x = ~action.hour, y = ~n) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = "Hour of day",
+            tick0 = 0,
+            dtick = 6
+        ),
+        yaxis = list(
+            title = "Number of order actions"
+        )
+    )
+```
+
