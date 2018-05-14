@@ -163,6 +163,12 @@ data_orders <- raw_orders_parent %>%
         replacement = "HC Childrens"
     )
 
+write_rds(
+    data_orders,
+    "data/tidy/2018-05_order-volume/data_orders.Rds",
+    compress = "gz"
+)
+
 pavilions <- c(
     "HH Hermann",
     "HH Cullen",
@@ -297,6 +303,12 @@ data_actions <- raw_actions %>%
         data_orders[c("millennium.id", "order.id", "building")],
         by = c("millennium.id", "order.id")
     )
+
+write_rds(
+    data_actions,
+    "data/tidy/2018-05_order-volume/data_actions.Rds",
+    compress = "gz"
+)
 
 a_hour <- data_actions %>%
     filter(
