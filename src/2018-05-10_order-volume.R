@@ -1,8 +1,8 @@
 library(tidyverse)
 library(lubridate)
 library(edwr)
-library(officer)
-library(rvg)
+# library(officer)
+# library(rvg)
 library(themebg)
 
 dir_raw <- "data/raw/2018-05_order-volume"
@@ -38,10 +38,7 @@ raw_orders_parent <- read_data(dir_raw, "orders-parent", FALSE) %>%
         order.location = `Nurse Unit (Order)`,
         building = `Building (Order)`
     ) %>%
-    format_dates(
-        c("order.datetime", "order.start", "order.dc"), 
-        tz
-    ) %>%
+    format_dates(c("order.datetime", "order.start", "order.dc")) %>%
     filter(!str_detect(order.location, "^CY|^NE"))
 
 # x <- distinct(raw_orders_parent, order.location)
@@ -251,16 +248,16 @@ raw_actions <- read_data(dir_raw, "orders-actions", FALSE) %>%
 data_actions <- raw_actions %>%
     semi_join(data_orders, by = "order.id") %>%
     filter(
-        (
-            str_detect(
-                action.provider.role,
-                regex("pharm", ignore_case = TRUE)
-            ) |
-                str_detect(
-                    action.provider,
-                    regex("rph", ignore_case = TRUE)
-                )
-        ),
+        # (
+        #     str_detect(
+        #         action.provider.role,
+        #         regex("pharm", ignore_case = TRUE)
+        #     ) |
+        #         str_detect(
+        #             action.provider,
+        #             regex("rph", ignore_case = TRUE)
+        #         )
+        # ),
         action.type != "Status Change",
         action.type != "Complete"
     ) %>%
