@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```{r}
 library(tidyverse)
 library(plotly)
+library(RColorBrewer)
 library(themebg)
 
 x <- dirr::get_rds("../data/tidy/2018-05_order-volume")
@@ -38,8 +39,11 @@ data_orders %>%
         building %in% pavilions
     ) %>%
     count(facility, building, order.hour) %>%
-    plot_ly(split = ~building) %>%
-    add_bars(x = ~order.hour, y = ~n) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), "Paired")) %>%
+    add_bars(
+        x = ~order.hour, 
+        y = ~n,
+        color = ~building) %>%
     layout(
         barmode = "stack",
         xaxis = list(
@@ -62,8 +66,11 @@ data_actions %>%
         building %in% pavilions
     ) %>%
     count(facility, building, action.hour) %>%
-    plot_ly(split = ~building) %>%
-    add_bars(x = ~action.hour, y = ~n) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), "Paired")) %>%
+    add_bars(
+        x = ~action.hour, 
+        y = ~n,
+        color = ~building) %>%
     layout(
         barmode = "stack",
         xaxis = list(
@@ -84,11 +91,19 @@ data_actions %>%
         facility != "other",
         building %in% pavilions
     ) %>%
-    count(facility, action.type, action.hour) %>%
+    count(facility, action.type, action.hour, sort = TRUE) %>%
     mutate_at("action.type", as_factor) %>%
-    mutate_at("action.type", fct_rev) %>%
-    plot_ly(split = ~action.type) %>%
-    add_bars(x = ~action.hour, y = ~n) %>%
+    plot_ly(
+        colors = brewer.pal(
+            nrow(distinct(data_actions, action.type)), 
+            "Paired"
+        )
+    ) %>%
+    add_bars(
+        x = ~action.hour,
+        y = ~n, 
+        color = ~action.type 
+    ) %>%
     layout(
         barmode = "stack",
         xaxis = list(
