@@ -32,6 +32,8 @@ pavilions <- c(
 
 ```
 
+# Original Orders
+
 ```{r, fig.cap="Number of original orders placed by hour of the day"}
 data_orders %>%
     filter(
@@ -59,6 +61,129 @@ data_orders %>%
 
 ```
 
+```{r, fig.cap="Number of original orders placed by day of the week"}
+data_orders %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, building, order.day) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), "Paired")) %>%
+    add_bars(
+        x = ~order.day, 
+        y = ~n,
+        color = ~building) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = "Day of week"
+        ),
+        yaxis = list(
+            title = "Number of orders"
+        )
+    )
+
+```
+
+```{r, fig.cap="Number of orders by hour of the day per pavilion by type of location"}
+
+small_mult_hour <- function(x) {
+    x %>%
+        plot_ly(
+            colors = brewer.pal(
+                length(levels(x$location.group)),
+                "Paired"
+            )
+        ) %>%
+        add_bars(
+            x = ~order.hour, 
+            y = ~n,
+            color = ~location.group,
+            legendgroup = ~location.group,
+            showlegend = x$building[1] == "HC Childrens"
+        ) %>%
+        layout(
+            barmode = "stack",
+            xaxis = list(
+                tick0 = 0,
+                dtick = 6
+            ),
+            yaxis = list(title = x$building[1])
+        )
+}
+
+df <- data_orders %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(building, location.group, order.hour) %>%
+    mutate_at("location.group", factor) %>%
+    spread(location.group, n, fill = 0L, drop = FALSE) %>%
+    gather(location.group, n, -building, -order.hour) %>%
+    mutate_at("location.group", factor) 
+
+df %>%
+    group_by(building) %>%
+    do(p = small_mult_hour(.)) %>%
+    subplot(nrows = length(pavilions), shareX = TRUE, shareY = TRUE) %>%
+    layout(
+        xaxis = list(title = "Hour of day")
+        # yaxis = list(title = "Number of orders")
+    )
+
+```
+
+```{r, fig.cap="Number of orders by day of week per pavilion by type of location"}
+
+small_mult_day <- function(x) {
+    x %>%
+        plot_ly(
+            colors = brewer.pal(
+                length(levels(x$location.group)),
+                "Paired"
+            )
+        ) %>%
+        add_bars(
+            x = ~order.day, 
+            y = ~n,
+            color = ~location.group,
+            legendgroup = ~location.group,
+            showlegend = x$building[1] == "HC Childrens"
+        ) %>%
+        layout(
+            barmode = "stack",
+            yaxis = list(title = x$building[1])
+        )
+}
+
+df <- data_orders %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(building, location.group, order.day) %>%
+    mutate_at("location.group", factor) %>%
+    spread(location.group, n, fill = 0L, drop = FALSE) %>%
+    gather(location.group, n, -building, -order.day) %>%
+    mutate_at("location.group", factor) 
+
+df %>%
+    group_by(building) %>%
+    do(p = small_mult_day(.)) %>%
+    subplot(nrows = length(pavilions), shareX = TRUE, shareY = TRUE) %>%
+    layout(
+        xaxis = list(title = "Day of week")
+        # yaxis = list(title = "Number of orders")
+    )
+
+```
+
+# Order Actions
+
 ```{r, fig.cap="Number of order actions by hour of the day"}
 data_actions %>%
     filter(
@@ -78,6 +203,30 @@ data_actions %>%
             title = "Hour of day",
             tick0 = 0,
             dtick = 6
+        ),
+        yaxis = list(
+            title = "Number of order actions"
+        )
+    )
+```
+
+```{r, fig.cap="Number of order actions by day of week"}
+data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, building, action.day) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), "Paired")) %>%
+    add_bars(
+        x = ~action.day, 
+        y = ~n,
+        color = ~building) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = "Day of week"
         ),
         yaxis = list(
             title = "Number of order actions"
@@ -136,6 +285,8 @@ df_facility %>%
     )
 
 ```
+
+# Order Actions by Pharmacy
 
 ```{r, fig.cap="Number of order actions handled by a pharmacist / tech by hour of the day, split by pavilion"}
 data_actions %>%
@@ -209,151 +360,3 @@ df_facility %>%
     )
 
 ```
-
-```{r, fig.cap="Number of original orders placed by day of the week"}
-data_orders %>%
-    filter(
-        !is.na(facility),
-        facility != "other",
-        building %in% pavilions
-    ) %>%
-    count(facility, building, order.day) %>%
-    plot_ly(colors = brewer.pal(length(pavilions), "Paired")) %>%
-    add_bars(
-        x = ~order.day, 
-        y = ~n,
-        color = ~building) %>%
-    layout(
-        barmode = "stack",
-        xaxis = list(
-            title = "Day of week"
-        ),
-        yaxis = list(
-            title = "Number of orders"
-        )
-    )
-
-```
-
-```{r, fig.cap="Number of order actions by day of week"}
-data_actions %>%
-    filter(
-        !is.na(facility),
-        facility != "other",
-        building %in% pavilions
-    ) %>%
-    count(facility, building, action.day) %>%
-    plot_ly(colors = brewer.pal(length(pavilions), "Paired")) %>%
-    add_bars(
-        x = ~action.day, 
-        y = ~n,
-        color = ~building) %>%
-    layout(
-        barmode = "stack",
-        xaxis = list(
-            title = "Day of week"
-        ),
-        yaxis = list(
-            title = "Number of order actions"
-        )
-    )
-```
-
-```{r, fig.cap="Number of orders by hour of the day per pavilion by type of location"}
-
-small_mult_hour <- function(x) {
-    x %>%
-        plot_ly(
-            colors = brewer.pal(
-                length(levels(x$location.group)),
-                "Paired"
-            )
-        ) %>%
-        add_bars(
-            x = ~order.hour, 
-            y = ~n,
-            color = ~location.group,
-            legendgroup = ~location.group,
-            showlegend = x$building[1] == "HC Childrens"
-        ) %>%
-        layout(
-            barmode = "stack",
-            xaxis = list(
-                tick0 = 0,
-                dtick = 6
-            ),
-            yaxis = list(title = x$building[1])
-        )
-}
-
-df <- data_orders %>%
-    filter(
-        !is.na(facility),
-        facility != "other",
-        building %in% pavilions
-    ) %>%
-    count(building, location.group, order.hour) %>%
-    mutate_at("location.group", factor) %>%
-    spread(location.group, n, fill = 0L, drop = FALSE) %>%
-    gather(location.group, n, -building, -order.hour) %>%
-    mutate_at("location.group", factor) 
-
-df %>%
-    group_by(building) %>%
-    do(p = small_mult_hour(.)) %>%
-    subplot(nrows = length(pavilions), shareX = TRUE, shareY = TRUE) %>%
-    layout(
-        xaxis = list(title = "Hour of day")
-        # yaxis = list(title = "Number of orders")
-    )
-
-```
-
-
-```{r, fig.cap="Number of orders by day of week per pavilion by type of location"}
-
-small_mult_day <- function(x) {
-    x %>%
-        plot_ly(
-            colors = brewer.pal(
-                length(levels(x$location.group)),
-                "Paired"
-            )
-        ) %>%
-        add_bars(
-            x = ~order.day, 
-            y = ~n,
-            color = ~location.group,
-            legendgroup = ~location.group,
-            showlegend = x$building[1] == "HC Childrens"
-        ) %>%
-        layout(
-            barmode = "stack",
-            yaxis = list(title = x$building[1])
-        )
-}
-
-df <- data_orders %>%
-    filter(
-        !is.na(facility),
-        facility != "other",
-        building %in% pavilions
-    ) %>%
-    count(building, location.group, order.day) %>%
-    mutate_at("location.group", factor) %>%
-    spread(location.group, n, fill = 0L, drop = FALSE) %>%
-    gather(location.group, n, -building, -order.day) %>%
-    mutate_at("location.group", factor) 
-
-df %>%
-    group_by(building) %>%
-    do(p = small_mult_day(.)) %>%
-    subplot(nrows = length(pavilions), shareX = TRUE, shareY = TRUE) %>%
-    layout(
-        xaxis = list(title = "Day of week")
-        # yaxis = list(title = "Number of orders")
-    )
-
-```
-
-
