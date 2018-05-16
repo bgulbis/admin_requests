@@ -85,28 +85,78 @@ data_actions %>%
     )
 ```
 
-```{r, fig.cap="Number of order actions by hour of the day, split by type of action"}
-data_actions %>%
+```{r, fig.cap="Number of order actions by hour of the day, split by type of action", eval=FALSE}
+df <- data_actions %>%
     filter(
         !is.na(facility),
         facility != "other",
         building %in% pavilions
     ) %>%
-    count(facility, action.type, action.hour, sort = TRUE) %>%
-    mutate_at("action.type", as_factor) %>%
+    count(action.type, sort = TRUE)
+
+df_all <- data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(action.type, action.hour) %>%
+    mutate_at("action.type", factor, levels = df$action.type)
+
+df_facility <- data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, action.type, action.hour) %>%
+    mutate_at("action.type", factor, levels = df$action.type)
+
+df_adult <- df_facility %>%
+    filter(facility == "Adult")
+
+df_pedi <- df_facility %>%
+    filter(facility == "Children\'s")
+
+
+    # spread(facility, n, fill = 0L) %>%
+    # rename(
+    #     adult = Adult,
+    #     pedi = `Children's`
+    # ) %>%
+    # mutate(all = adult + pedi) %>%
+
+df_all %>%
     plot_ly(
+        x = ~action.hour,
+        y = ~n,
+        color = ~action.type,
         colors = brewer.pal(
-            nrow(distinct(data_actions, action.type)), 
+            nrow(df), 
             "Paired"
-        )
+        ),
+        legendgroup = ~action.type
     ) %>%
     add_bars(
-        x = ~action.hour,
-        y = ~n, 
-        color = ~action.type 
+        # y = ~all,
+        # name = "all",
+        visible = TRUE
+    ) %>%
+    add_bars(
+        data = df_adult,
+        # y = ~adult, 
+        # name = "adult",
+        visible = FALSE
+    ) %>%
+    add_bars(
+        data = df_pedi,
+        # y = ~pedi,
+        # name = "pedi",
+        visible = FALSE
     ) %>%
     layout(
         barmode = "stack",
+        title = "All Areas",
         xaxis = list(
             title = "Hour of day",
             tick0 = 0,
@@ -114,8 +164,103 @@ data_actions %>%
         ),
         yaxis = list(
             title = "Number of order actions"
+        ),
+        updatemenus = list(
+            list(
+                y = 0.9,
+                buttons = list(
+                    list(
+                        method = "update",
+                        args = list(
+                            list(visible = c(TRUE, FALSE, FALSE)),
+                            list(title = "All Areas")
+                        ),
+                        label = "All"
+                    ),
+                    list(
+                        method = "update",
+                        args = list(
+                            list(visible = c(FALSE, TRUE, FALSE)),
+                            list(title = "Adult Only")
+                        ),
+                        label = "Adult"
+                    ),
+                    list(
+                        method = "update",
+                        args = list(
+                            list(visible = c(FALSE, FALSE, TRUE)),
+                            list(title = "Children\'s Only")
+                        ),
+                        label = "Childrens"
+                    )
+                )
+            )
         )
     )
+```
+
+```{r, fig.cap="Number of order actions by hour of the day, split by type of action"}
+df <- data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(action.type, sort = TRUE)
+
+# df_all <- data_actions %>%
+#     filter(
+#         !is.na(facility),
+#         facility != "other",
+#         building %in% pavilions
+#     ) %>%
+#     count(action.type, action.hour) %>%
+#     mutate_at("action.type", factor, levels = df$action.type)
+
+sub_actions <- function(x) {
+    x %>%
+        plot_ly(        
+            colors = brewer.pal(
+                nrow(df), 
+                "Paired"
+            )
+        ) %>%
+        add_bars(
+            x = ~action.hour,
+            y = ~n,
+            color = ~action.type,
+            legendgroup = ~action.type,
+            showlegend = x$facility[1] == "Adult"
+        ) %>%
+        layout(
+            barmode = "stack",
+            xaxis = list(
+                title = x$facility[1],
+                tick0 = 0,
+                dtick = 6
+            )
+        )
+    
+}
+
+df_facility <- data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) %>%
+    count(facility, action.type, action.hour) %>%
+    mutate_at("action.type", factor, levels = df$action.type)
+
+df_facility %>%
+    group_by(facility) %>%
+    do(p = sub_actions(.)) %>%
+    subplot(nrows = 1, shareX = TRUE, shareY = TRUE) %>%
+    layout(
+        # xaxis = list(title = "Hour of day"),
+        yaxis = list(title = "Number of order actions")
+    )
+
 ```
 
 ```{r, fig.cap="Number of order actions handled by a pharmacist / tech by hour of the day, split by pavilion"}
