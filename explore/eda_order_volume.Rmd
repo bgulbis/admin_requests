@@ -1,0 +1,335 @@
+---
+title: "Pharmacy Order Volume"
+author: "Brian Gulbis, PharmD, BCPS"
+date: 'Updated on: `r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+    html_document:
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(RColorBrewer)
+library(themebg)
+
+x <- dirr::get_rds("../data/tidy/2018-05_order-volume")
+
+rm(x)
+
+pavilions <- c(
+    "HH Hermann",
+    "HH Cullen",
+    "HH Jones",
+    "HH HVI",
+    "HC Childrens"
+)
+
+pal <- "Paired"
+
+order_title <- "Number of orders"
+action_title <- "Number of order actions"
+hour_title <- "Hour of day"
+day_title <- "Day of week"
+
+df_orders <- data_orders %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    )
+
+df_actions <- data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions
+    ) 
+
+df_rph <- data_actions %>%
+    filter(
+        !is.na(facility),
+        facility != "other",
+        building %in% pavilions,
+        (
+            str_detect(
+                action.provider.role,
+                regex("pharm", ignore_case = TRUE)
+            ) |
+                str_detect(
+                    action.provider,
+                    regex("rph", ignore_case = TRUE)
+                )
+        )
+    ) 
+
+avg_week <- function(df, ...) {
+    var <- quos(...)
+    
+    df %>%
+        count(!!! var) %>%
+        mutate_at("n", funs(. / 2))
+}
+
+sub_orders <- function(df, x) {
+    x <- enquo(x)
+    tick0 <- NULL
+    dtick <- NULL
+
+    if(quo_name(x) == "order.hour") {
+        tick0 <- 0
+        dtick <- 6
+    }
+    
+    df %>%
+        plot_ly(
+            colors = brewer.pal(
+                length(levels(df$location.group)),
+                pal
+            )
+        ) %>%
+        add_bars(
+            x = x, 
+            y = ~n,
+            color = ~location.group,
+            legendgroup = ~location.group,
+            showlegend = df$building[1] == "HC Childrens"
+        ) %>%
+        layout(
+            barmode = "stack",
+            xaxis = list(
+                tick0 = tick0,
+                dtick = dtick
+            ),
+            yaxis = list(title = df$building[1])
+        )
+}
+
+sub_actions <- function(df, x) {
+    x <- enquo(x)
+    tick0 <- NULL
+    dtick <- NULL
+
+    if(quo_name(x) == "action.hour") {
+        tick0 <- 0
+        dtick <- 6
+    }
+    
+    df %>%
+        plot_ly(        
+            colors = brewer.pal(
+                nrow(distinct(df, action.type)), 
+                pal
+            )
+        ) %>%
+        add_bars(
+            x = x,
+            y = ~n,
+            color = ~action.type,
+            legendgroup = ~action.type,
+            showlegend = df$facility[1] == "Adult"
+        ) %>%
+        layout(
+            barmode = "stack",
+            xaxis = list(
+                title = df$facility[1],
+                tick0 = tick0,
+                dtick = dtick
+            )
+        )
+}
+```
+
+A two-week sample of data from April 1 - 14, 2018, was used to calculate a weekly average order volume.
+
+# Original Orders
+
+```{r, fig.cap="Number of original orders placed by hour of the day"}
+df_orders %>%
+    avg_week(facility, building, order.hour) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), pal)) %>%
+    add_bars(
+        x = ~order.hour,
+        y = ~n,
+        color = ~building) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = hour_title,
+            tick0 = 0,
+            dtick = 6
+        ),
+        yaxis = list(title = order_title)
+    )
+
+```
+
+```{r, fig.cap="Number of original orders placed by day of the week"}
+df_orders %>%
+    avg_week(facility, building, order.day) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), pal)) %>%
+    add_bars(
+        x = ~order.day, 
+        y = ~n,
+        color = ~building) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(title = day_title),
+        yaxis = list(title = order_title)
+    )
+
+```
+
+```{r, fig.cap="Number of orders by hour of the day per pavilion by type of location"}
+df_orders %>%
+    avg_week(building, location.group, order.hour) %>%
+    mutate_at("location.group", factor) %>%
+    spread(location.group, n, fill = 0L, drop = FALSE) %>%
+    gather(location.group, n, -building, -order.hour) %>%
+    mutate_at("location.group", factor) %>%
+    group_by(building) %>%
+    do(p = sub_orders(., order.hour)) %>%
+    subplot(nrows = length(pavilions), shareX = TRUE, shareY = TRUE) %>%
+    layout(xaxis = list(title = hour_title))
+
+```
+
+```{r, fig.cap="Number of orders by day of week per pavilion by type of location"}
+df_orders %>%
+    avg_week(building, location.group, order.day) %>%
+    mutate_at("location.group", factor) %>%
+    spread(location.group, n, fill = 0L, drop = FALSE) %>%
+    gather(location.group, n, -building, -order.day) %>%
+    mutate_at("location.group", factor) %>%
+    group_by(building) %>%
+    do(p = sub_orders(., order.day)) %>%
+    subplot(nrows = length(pavilions), shareX = TRUE, shareY = TRUE) %>%
+    layout(xaxis = list(title = day_title))
+
+```
+
+# Order Actions
+
+```{r, fig.cap="Number of order actions by hour of the day"}
+df_actions %>%
+    avg_week(facility, building, action.hour) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), pal)) %>%
+    add_bars(
+        x = ~action.hour, 
+        y = ~n,
+        color = ~building) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = hour_title,
+            tick0 = 0,
+            dtick = 6
+        ),
+        yaxis = list(title = action_title)
+    )
+```
+
+```{r, fig.cap="Number of order actions by day of week"}
+df_actions %>%
+    avg_week(facility, building, action.day) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), pal)) %>%
+    add_bars(
+        x = ~action.day, 
+        y = ~n,
+        color = ~building) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(title = day_title),
+        yaxis = list(title = action_title)
+    )
+```
+
+```{r, fig.cap="Number of order actions by hour of the day, split by type of action"}
+dat <- df_actions %>%
+    count(action.type, sort = TRUE)
+
+df_actions %>%
+    avg_week(facility, action.type, action.hour) %>%
+    mutate_at("action.type", factor, levels = dat$action.type) %>%
+    group_by(facility) %>%
+    do(p = sub_actions(., action.hour)) %>%
+    subplot(nrows = 1, shareX = TRUE, shareY = TRUE) %>%
+    layout(yaxis = list(title = action_title))
+```
+
+```{r, fig.cap="Number of order actions by day of week, split by type of action"}
+df_actions %>%
+    avg_week(facility, action.type, action.day) %>%
+    mutate_at("action.type", factor, levels = dat$action.type) %>%
+    group_by(facility) %>%
+    do(p = sub_actions(., action.day)) %>%
+    subplot(nrows = 1, shareX = TRUE, shareY = TRUE) %>%
+    layout(yaxis = list(title = action_title))
+```
+
+
+# Order Actions by Pharmacy
+
+```{r, fig.cap="Number of order actions handled by a pharmacist / tech by hour of the day, split by pavilion"}
+df_rph %>%
+    avg_week(facility, building, action.hour, sort = TRUE) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), pal)) %>%
+    add_bars(
+        x = ~action.hour,
+        y = ~n, 
+        color = ~building 
+    ) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(
+            title = hour_title,
+            tick0 = 0,
+            dtick = 6
+        ),
+        yaxis = list(title = action_title)
+    )
+```
+
+```{r, fig.cap="Number of order actions handled by a pharmacist / tech by day of week, split by pavilion"}
+df_rph %>%
+    avg_week(facility, building, action.day, sort = TRUE) %>%
+    plot_ly(colors = brewer.pal(length(pavilions), pal)) %>%
+    add_bars(
+        x = ~action.day,
+        y = ~n, 
+        color = ~building 
+    ) %>%
+    layout(
+        barmode = "stack",
+        xaxis = list(title = day_title),
+        yaxis = list(title = action_title)
+    )
+```
+
+```{r, fig.cap="Number of order actions handled by a pharmacist / tech by hour of the day, split by action type"}
+dat <- df_rph %>%
+    count(action.type, sort = TRUE)
+
+df_rph %>%
+    avg_week(facility, action.type, action.hour) %>%
+    mutate_at("action.type", factor, levels = dat$action.type) %>%
+    group_by(facility) %>%
+    do(p = sub_actions(., action.hour)) %>%
+    subplot(nrows = 1, shareX = TRUE, shareY = TRUE) %>%
+    layout(yaxis = list(title = action_title))
+```
+
+```{r, fig.cap="Number of order actions handled by a pharmacist / tech by day of week, split by action type"}
+df_rph %>%
+    avg_week(facility, action.type, action.day) %>%
+    mutate_at("action.type", factor, levels = dat$action.type) %>%
+    group_by(facility) %>%
+    do(p = sub_actions(., action.day)) %>%
+    subplot(nrows = 1, shareX = TRUE, shareY = TRUE) %>%
+    layout(yaxis = list(title = action_title))
+```
+
