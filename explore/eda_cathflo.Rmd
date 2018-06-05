@@ -25,25 +25,65 @@ dir_raw <- "../data/raw/2018-05_cathflo"
 #       - Medication (Generic): alteplase
 #       - Admit date: 2/1/2018 - 4/30/2018
 
-pts <- read_data(dir_raw, "patients", FALSE) %>%
-    as.patients()
-
-mbo_pts <- concat_encounters(pts$millennium.id)
+# pts <- read_data(dir_raw, "patients", FALSE) %>%
+#     as.patients()
+# 
+# mbo_pts <- concat_encounters(pts$millennium.id)
 
 # run MBO query
 #   * Medications - Inpatient - Prompt
 #       - Medication (Generic): alteplase
 
+
+# run MBO query
+#   * Patients - by Order - no Building
+
+pts_orders <- read_data(dir_raw, "patients-orders", FALSE) %>%
+    as.patients()
+
+mbo_orders <- concat_encounters(pts_orders$millennium.id)
+
+# run MBO query
+#   * Medications - Inpatient - Prompt
+#       - Medication (Generic): alteplase
+#   * Orders Meds - Details with Volume
+
+
+cathflo <- "alteplase 1 mg INJ (2 mg/2 ml)"
+
+orders <- read_data(dir_raw, "orders-details", FALSE) %>%
+    as.order_detail(
+        extras = c(
+            "order.product" = "Mnemonic (Product)",
+            "order.as" = "Mnemonic (Ordered As Name)"
+        )
+    ) %>%
+    mutate_at("ingredient.dose", as.numeric) %>%
+    filter(ingredient.dose <= 4)
+    # filter(order.product == cathflo | order.as == cathflo)
+
 meds <- read_data(dir_raw, "meds-inpt", FALSE) %>%
     as.meds_inpt() %>%
     filter(
         is.na(event.tag),
-        med.dose == 1 | med.dose == 2
-    ) 
+        med.dose <= 2
+    )
 
 ```
 
-```{r, fig.cap="Number of 1mg and 2mg doses given over a 3 month period"}
+```{r, fig.cap="Number of orders for alteplase doses given over a 3 month period"}
+orders %>%
+    count(ingredient.dose) %>%
+    mutate_at("ingredient.dose", factor) %>%
+    plot_ly() %>%
+    add_bars(x = ~ingredient.dose, y = ~n) %>%
+    layout(
+        xaxis = list(title = "Dose (mg)"),
+        yaxis = list(title = "Number of orders")
+    )
+```
+
+```{r, fig.cap="Number of medication administrations for alteplase doses given over a 3 month period"}
 meds %>%
     count(med.dose) %>%
     mutate_at("med.dose", factor) %>%
@@ -54,4 +94,3 @@ meds %>%
         yaxis = list(title = "Number of doses")
     )
 ```
-
