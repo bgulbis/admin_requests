@@ -1,0 +1,67 @@
+---
+title: "Med Requests"
+author: "Brian Gulbis, PharmD, BCPS"
+date: 'Updated on: `r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+    html_document:
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(themebg)
+
+data_reqs <- read_rds("../data/tidy/2018-07_med-requests/med-requests.Rds")
+```
+
+```{r fig.cap="Percentage of med requests coming from each unit", fig.height=8}
+data_reqs %>%
+    count(loc_nurse_unit, sort = TRUE) %>%
+    mutate(pct = n / nrow(data_reqs) * 100) %>%
+    mutate_at(vars(loc_nurse_unit), as_factor) %>%
+    mutate_at(vars(loc_nurse_unit), fct_rev) %>%
+    ggplot(aes(x = loc_nurse_unit, y = pct)) +
+    geom_bar(stat = "identity") +
+    xlab(NULL) +
+    ylab("Med Requests (%)") +
+    coord_flip() +
+    theme_bg()
+```
+
+```{r fig.cap="Number of med requests by hour of day"}
+data_reqs %>%
+    mutate(req_hr = hour(med_request_dt_tm)) %>%
+    count(req_hr) %>%
+    arrange(req_hr) %>%
+    ggplot(aes(x = req_hr, y = n)) +
+    geom_bar(stat = "identity") +
+    scale_x_continuous("Hour of Day", breaks = seq(0, 24, 6)) +
+    ylab("Number of Requests") +
+    theme_bg()
+```
+
+```{r fig.height=8, fig.cap="Distribution of time from scheduled dispense to med request in hours"}
+meds <- data_reqs %>%
+    mutate(req_dispense = difftime(med_request_dt_tm, dispense_next_dt_tm, units = "hours")) %>%
+    group_by(loc_nurse_unit) %>%
+    summarize_at(vars(req_dispense), median, na.rm = TRUE) %>%
+    arrange(req_dispense)
+
+data_reqs %>%
+    mutate(req_dispense = difftime(med_request_dt_tm, dispense_next_dt_tm, units = "hours")) %>%
+    mutate_at(vars(req_dispense), as.numeric) %>%
+    mutate_at(vars(loc_nurse_unit), factor, levels = meds$loc_nurse_unit) %>%
+    mutate_at(vars(loc_nurse_unit), fct_rev) %>%
+    ggplot(aes(x = loc_nurse_unit, y = req_dispense)) +
+    geom_boxplot() +
+    xlab(NULL) +
+    ylab("Time from dispense to request (hours)") +
+    coord_flip(ylim = c(-100, 100)) +
+    theme_bg()
+```
+
