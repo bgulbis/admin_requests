@@ -65,3 +65,16 @@ data_reqs %>%
     theme_bg()
 ```
 
+```{r fig.cap="Reasons for the med request"}
+data_reqs %>%
+    count(reason, sort = TRUE) %>%
+    mutate_at(vars(reason), as_factor) %>%
+    mutate_at(vars(reason), fct_rev) %>%
+    ggplot(aes(x = reason, y = n)) +
+    geom_bar(stat = "identity") +
+    xlab(NULL) +
+    ylab("Number") +
+    coord_flip() +
+    theme_bg()
+```
+
