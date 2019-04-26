@@ -1,0 +1,251 @@
+---
+title: "Naloxone Utilization"
+author: "Brian Gulbis, PharmD, BCPS"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  tufte::tufte_handout:
+    latex_engine: xelatex
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(
+    tidy = FALSE, 
+    cache.extra = packageVersion('tufte'),
+    echo = FALSE,
+    warning = FALSE,
+    message = FALSE
+)
+
+options(htmltools.dir.version = FALSE)
+```
+
+```{r}
+get_data <- function(path, pattern, col_types = NULL) {
+    f <- list.files(path, pattern, full.names = TRUE)
+    
+    n <- f %>% 
+        purrr::map_int(~ nrow(data.table::fread(.x, select = 1L))) 
+    
+    f[n > 0] %>%
+        purrr::map_df(
+            readr::read_csv,
+            locale = tz_locale,
+            col_types = col_types
+        ) %>%
+        rename_all(stringr::str_to_lower)
+}
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(themebg)
+
+tz_locale <- locale(tz = "US/Central")
+floor_unit <- "month"
+
+data_dir <- "../data/tidy/naloxone"
+
+data_events <- get_data(data_dir, "events")
+data_orders <- get_data(data_dir, "orders")
+
+df_events <- data_events %>%
+    mutate(
+        med_month = floor_date(clinical_event_datetime, "month"),
+        med_route = case_when(
+            route %in% c("IV", "IVP", "IM", "SUB-Q") ~ "IV",
+            route %in% c("MISC", "DIALYSIS", "PYXIS") ~ "MISC",
+            TRUE ~ "PO"
+        )
+    ) %>%
+    filter(
+        med_route != "MISC",
+        facility != "CY CYPRESS")
+
+df_orders <- data_orders %>%
+    select(
+        encounter_id, 
+        order_id, 
+        prn,
+        med_service, 
+        provider, 
+        provider_position, 
+        attending_order, 
+        freq
+    )
+```
+
+Overall, campus-wide use of naloxone has been increasing over the past year (see Figure 1). Most of this increase can be attributed to an increase in the use of oral naloxone (see Figures 2 and 3). Administration of naloxone via the oral route is an off-label use which is usually given to reduce opioid-induced constipation, since oral naloxone is not absorbed. This is an alternative to using more expensive medications such as methylnaltrexone. Oral naloxone is being used solely in the adult patient population (see Figure 4), with the majority of use occuring in patients on the Burn Service in 8-West Jones (see Figures 5 and 6). 
+
+```{r fig.cap="Naloxone use has been increasing."}
+df_events %>%
+    count(med_month) %>%
+    ggplot(aes(x = med_month, y = n)) +
+    geom_line() +
+    geom_smooth() +
+    scale_x_datetime(NULL, date_labels = "%b %Y") +
+    ylab("Monthly Doses") +
+    scale_color_brewer("Route", palette = "Set1") +
+    theme_bg() +
+    theme(legend.position = "bottom")
+```
+
+
+```{r, fig.cap="Number of doses by route of administration. There has been a recent increase in the number of doses adminstered orally."}
+df_events %>%
+    count(med_month, med_route) %>%
+    ggplot(aes(x = med_month, y = n)) +
+    geom_line(aes(color = med_route)) +
+    scale_x_datetime(NULL, date_labels = "%b %Y") +
+    ylab("Monthly Doses") +
+    scale_color_brewer("Route", palette = "Set1") +
+    theme_bg() +
+    theme(legend.position = "bottom")
+```
+
+```{r, fig.cap="Number of patients receiving oral naloxone each month is increasing."}
+df_events %>%
+    filter(med_route == "PO") %>%
+    left_join(
+        df_orders, 
+        by = c("encounter_id", "orig_order_id" = "order_id")
+    ) %>%
+    distinct(med_month, med_service, encounter_id) %>%
+    count(med_month) %>%
+    ggplot(aes(x = med_month, y = n)) +
+    geom_line() +
+    scale_x_datetime(NULL, date_labels = "%b %Y") +
+    ylab("Monthly Patients") +
+    theme_bg()    
+```
+
+```{r, fig.cap="Oral naloxone use is entirely in the adult population.", fig.height=6}
+df_events %>%
+    count(med_month, facility, med_route) %>%
+    ggplot(aes(x = med_month, y = n)) +
+    geom_line(aes(color = facility)) +
+    scale_x_datetime(NULL, date_labels = "%b %Y") +
+    ylab("Monthly Doses") +
+    scale_color_brewer("Facility", palette = "Set1") +
+    facet_wrap(~ med_route, ncol = 1) +
+    theme_bg()
+    # theme(legend.position = "bottom")
+```
+
+```{r, fig.cap="The majority of oral naloxone doses are being given on 8W Jones"}
+tmp <- df_events %>%
+    filter(med_route == "PO") %>%
+    count(nurse_unit, sort = TRUE)
+
+df_events %>%
+    filter(med_route == "PO") %>%
+    # add_count(nurse_unit) %>%
+    mutate_at("nurse_unit", factor, levels = tmp$nurse_unit) %>%
+    mutate_at("nurse_unit", fct_lump, n = 10, other_level = "All Others") %>%
+    mutate_at("nurse_unit", fct_rev) %>%
+    ggplot(aes(x = nurse_unit)) +
+    geom_bar() +
+    xlab(NULL) +
+    ylab("Doses") +
+    coord_flip() +
+    theme_bg()
+```
+
+```{r, fig.cap="The majority of oral naloxone doses are being ordered for patients on the Burn Service."}
+df <- df_events %>%
+    filter(med_route == "PO") %>%
+    left_join(
+        df_orders, 
+        by = c("encounter_id", "orig_order_id" = "order_id")
+    ) %>%
+    filter(!is.na(med_service)) 
+
+tmp <- count(df, med_service, sort = TRUE)
+
+df %>%
+    mutate_at("med_service", factor, levels = tmp$med_service) %>%
+    mutate_at("med_service", fct_lump, n = 7, other_level = "All Others") %>%
+    mutate_at("med_service", fct_rev) %>%
+    ggplot(aes(x = med_service)) +
+    geom_bar() +
+    xlab(NULL) +
+    ylab("Doses") +
+    coord_flip() +
+    theme_bg()
+```
+
+```{r, fig.cap="Most common attending physicians for patients receiving oral naloxone."}
+tmp <- count(df, attending_order, sort = TRUE)
+
+df %>%
+    mutate_at("attending_order", factor, levels = tmp$attending_order) %>%
+    mutate_at("attending_order", fct_lump, n = 10, other_level = "All Others") %>%
+    mutate_at("attending_order", fct_rev) %>%
+    ggplot(aes(x = attending_order)) +
+    geom_bar() +
+    xlab(NULL) +
+    ylab("Doses") +
+    coord_flip() +
+    theme_bg()
+
+```
+
+```{r, fig.cap="Most common providers (by role) ordering oral naloxone."}
+df_tmp <- df %>%
+    mutate_at(
+        "provider_position",
+        str_replace_all, 
+        pattern = " eOrder", 
+        replacement = ""
+    ) %>%
+    filter(
+        !is.na(provider_position),
+        provider_position != "zzTerminated User"
+    )
+
+tmp <- count(df_tmp, provider_position, sort = TRUE)
+
+df_tmp %>%
+    mutate_at("provider_position", factor, levels = tmp$provider_position) %>%
+    mutate_at("provider_position", fct_lump, n = 10, other_level = "All Others") %>%
+    mutate_at("provider_position", fct_rev) %>%
+    ggplot(aes(x = provider_position)) +
+    geom_bar() +
+    xlab(NULL) +
+    ylab("Doses") +
+    coord_flip() +
+    theme_bg()
+
+```
+
+```{r, fig.cap="Change in orders for oral naloxone by medical service."}
+tmp <- df_events %>%
+    filter(med_route == "PO") %>%
+    left_join(
+        df_orders, 
+        by = c("encounter_id", "orig_order_id" = "order_id")
+    ) %>%
+    count(med_service, sort = TRUE) %>%
+    top_n(5)
+
+df_events %>%
+    filter(med_route == "PO") %>%
+    left_join(
+        df_orders, 
+        by = c("encounter_id", "orig_order_id" = "order_id")
+    ) %>%
+    semi_join(tmp, by = "med_service") %>%
+    count(med_month, med_service) %>%
+    ggplot(aes(x = med_month, y = n)) +
+    geom_line(aes(color = med_service)) +
+    scale_x_datetime(NULL, date_labels = "%b %Y") +
+    ylab("Monthly Doses") +
+    scale_color_brewer("Medical Service", palette = "Set1") +
+    theme_bg()
+    # theme(legend.position = "bottom")
+```
+
+
