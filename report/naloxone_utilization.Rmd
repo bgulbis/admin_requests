@@ -78,7 +78,9 @@ df_orders <- data_orders %>%
     )
 ```
 
-Overall, campus-wide use of naloxone has been increasing over the past year (see Figure 1). Most of this increase can be attributed to an increase in the use of oral naloxone (see Figures 2 and 3). Administration of naloxone via the oral route is an off-label use which is usually given to reduce opioid-induced constipation, since oral naloxone is not absorbed. This is an alternative to using more expensive medications such as methylnaltrexone. Oral naloxone is being used solely in the adult patient population (see Figure 4), with the majority of use occuring in patients on the Burn Service in 8-West Jones (see Figures 5 and 6). 
+## Summary
+
+Overall, campus-wide use of naloxone has been increasing over the past year (see Figure 1). Most of this increase can be attributed to an increase in the use of oral naloxone (see Figure 2). Administration of naloxone via the oral route is an off-label use which is usually given to reduce opioid-induced constipation, since oral naloxone is not absorbed. This is an alternative to using more expensive medications such as methylnaltrexone. Oral naloxone is being used solely in the adult patient population, with the majority of use occuring in patients on the Burn Service in 8-West Jones (see Figures 3 and 4). 
 
 ```{r fig.cap="Naloxone use has been increasing."}
 df_events %>%
@@ -106,7 +108,7 @@ df_events %>%
     theme(legend.position = "bottom")
 ```
 
-```{r, fig.cap="Number of patients receiving oral naloxone each month is increasing."}
+```{r, fig.cap="Number of patients receiving oral naloxone each month is increasing.", eval=FALSE}
 df_events %>%
     filter(med_route == "PO") %>%
     left_join(
@@ -117,12 +119,13 @@ df_events %>%
     count(med_month) %>%
     ggplot(aes(x = med_month, y = n)) +
     geom_line() +
+    geom_smooth() +
     scale_x_datetime(NULL, date_labels = "%b %Y") +
     ylab("Monthly Patients") +
     theme_bg()    
 ```
 
-```{r, fig.cap="Oral naloxone use is entirely in the adult population.", fig.height=6}
+```{r, fig.cap="Oral naloxone use is entirely in the adult population.", fig.height=6, eval=FALSE}
 df_events %>%
     count(med_month, facility, med_route) %>%
     ggplot(aes(x = med_month, y = n)) +
@@ -193,7 +196,7 @@ df %>%
 
 ```
 
-```{r, fig.cap="Most common providers (by role) ordering oral naloxone."}
+```{r, fig.cap="Most common providers (by role) ordering oral naloxone.", eval=FALSE}
 df_tmp <- df %>%
     mutate_at(
         "provider_position",
@@ -221,7 +224,7 @@ df_tmp %>%
 
 ```
 
-```{r, fig.cap="Change in orders for oral naloxone by medical service."}
+```{r, fig.cap="Change in orders for oral naloxone by medical service.", eval=FALSE}
 tmp <- df_events %>%
     filter(med_route == "PO") %>%
     left_join(
