@@ -1,0 +1,436 @@
+---
+title: "LVAD Patients"
+author: "Brian Gulbis, PharmD, BCPS"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, wwarning = FALSE, message = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(MASS)
+
+df <- read_excel(
+    "../data/raw/2019-05_lvad-gib/data_2019-06-13.xlsx",
+    skip = 1,
+    col_types = c(
+        "numeric",
+        "numeric",
+        "logical",
+        "numeric",
+        "logical",
+        "logical",
+        "logical",
+        "logical",
+        "logical",
+        "skip",
+        "logical",
+        "logical",
+        "logical",
+        "logical",
+        "logical"
+    ),
+    col_names = c(
+        "patient_id",
+        "age",
+        "female",
+        "bmi",
+        "afib",
+        "cad",
+        "dm",
+        "cva",
+        "low_inr",
+        "recur_gi_bleed",
+        "pump_thrombosis",
+        "isch_cva",
+        "pump_thromb_cva",
+        "hemor_cva"
+    )
+)
+```
+
+# Univariate Logistic Regression Models
+
+## Recurrent GI Bleed
+
+### Age
+```{r}
+glm(recur_gi_bleed ~ age, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Female
+```{r}
+glm(recur_gi_bleed ~ female, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### BMI
+```{r}
+glm(recur_gi_bleed ~ bmi, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### A.fib
+```{r}
+glm(recur_gi_bleed ~ afib, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### CAD
+```{r}
+glm(recur_gi_bleed ~ cad, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### DM
+```{r}
+glm(recur_gi_bleed ~ dm, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Stroke
+```{r}
+glm(recur_gi_bleed ~ cva, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Low INR Goal
+```{r}
+glm(recur_gi_bleed ~ low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Pump Thrombosis
+
+### Age
+```{r}
+glm(pump_thrombosis ~ age, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Female
+```{r}
+glm(pump_thrombosis ~ female, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### BMI
+```{r}
+glm(pump_thrombosis ~ bmi, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### A.fib
+```{r}
+glm(pump_thrombosis ~ afib, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### CAD
+```{r}
+glm(pump_thrombosis ~ cad, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### DM
+```{r}
+glm(pump_thrombosis ~ dm, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Stroke
+```{r}
+glm(pump_thrombosis ~ cva, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Low INR Goal
+```{r}
+glm(pump_thrombosis ~ low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Ischemic Stroke
+
+### Age
+```{r}
+glm(isch_cva ~ age, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Female
+```{r}
+glm(isch_cva ~ female, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### BMI
+```{r}
+glm(isch_cva ~ bmi, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### A.fib
+```{r}
+glm(isch_cva ~ afib, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### CAD
+```{r}
+glm(isch_cva ~ cad, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### DM
+```{r}
+glm(isch_cva ~ dm, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Stroke
+```{r}
+glm(isch_cva ~ cva, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Low INR Goal
+```{r}
+glm(isch_cva ~ low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Pump Thrombosis or Ischemic Stroke
+
+### Age
+```{r}
+glm(pump_thromb_cva ~ age, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Female
+```{r}
+glm(pump_thromb_cva ~ female, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### BMI
+```{r}
+glm(pump_thromb_cva ~ bmi, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### A.fib
+```{r}
+glm(pump_thromb_cva ~ afib, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### CAD
+```{r}
+glm(pump_thromb_cva ~ cad, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### DM
+```{r}
+glm(pump_thromb_cva ~ dm, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Stroke
+```{r}
+glm(pump_thromb_cva ~ cva, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Low INR Goal
+```{r}
+glm(pump_thromb_cva ~ low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Hemorrhagic Stroke
+
+### Age
+```{r}
+glm(hemor_cva ~ age, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Female
+```{r}
+glm(hemor_cva ~ female, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### BMI
+```{r}
+glm(hemor_cva ~ bmi, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### A.fib
+```{r}
+glm(hemor_cva ~ afib, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### CAD
+```{r}
+glm(hemor_cva ~ cad, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### DM
+```{r}
+glm(hemor_cva ~ dm, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Stroke
+```{r}
+glm(hemor_cva ~ cva, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+### Low INR Goal
+```{r}
+glm(hemor_cva ~ low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+# Multivariate Regression Models
+
+## Recurrent GI Bleed
+
+```{r}
+glm(recur_gi_bleed ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Pump Thrombosis
+
+```{r}
+glm(pump_thrombosis ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Ischemic Stroke
+
+```{r}
+glm(isch_cva ~ age + female + bmi + afib + cad + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Pump Thrombosis or Ischemic Stroke
+
+```{r}
+glm(pump_thromb_cva ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Hemorrhagic Stroke
+
+```{r}
+glm(hemor_cva ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+# Stepwise Regression Models
+
+## Recurrent GI Bleed
+
+```{r}
+glm(recur_gi_bleed ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    stepAIC(direction = "backward", trace = FALSE) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Pump Thrombosis
+
+```{r}
+glm(pump_thrombosis ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    stepAIC(direction = "backward", trace = FALSE) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Ischemic Stroke
+
+```{r}
+glm(isch_cva ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    stepAIC(direction = "backward", trace = FALSE) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Pump Thrombosis or Ischemic Stroke
+
+```{r}
+glm(pump_thromb_cva ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    stepAIC(direction = "backward", trace = FALSE) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
+
+## Hemorrhagic Stroke
+
+```{r}
+glm(hemor_cva ~ age + female + bmi + afib + cad + dm + cva + low_inr, family = "binomial", data = df) %>%
+    stepAIC(direction = "backward", trace = FALSE) %>%
+    tidy() %>%
+    knitr::kable(digits = 3)
+```
