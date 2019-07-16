@@ -59,56 +59,56 @@ df <- read_excel(
 ### Age
 ```{r}
 glm(pump_thrombosis ~ age, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### Female
 ```{r}
 glm(pump_thrombosis ~ female, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### BMI
 ```{r}
 glm(pump_thrombosis ~ bmi, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### A.fib
 ```{r}
 glm(pump_thrombosis ~ afib, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### CAD
 ```{r}
 glm(pump_thrombosis ~ cad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### HTN
 ```{r}
 glm(pump_thrombosis ~ htn, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### DM
 ```{r}
 glm(pump_thrombosis ~ dm, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### GIB with VAD
 ```{r}
 glm(pump_thrombosis ~ gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -117,56 +117,56 @@ glm(pump_thrombosis ~ gib_vad, family = "binomial", data = df) %>%
 ### Age
 ```{r}
 glm(isch_cva ~ age, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### Female
 ```{r}
 glm(isch_cva ~ female, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### BMI
 ```{r}
 glm(isch_cva ~ bmi, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### A.fib
 ```{r}
 glm(isch_cva ~ afib, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### CAD
 ```{r}
 glm(isch_cva ~ cad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### HTN
 ```{r}
 glm(isch_cva ~ htn, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### DM
 ```{r}
 glm(isch_cva ~ dm, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### GIB with VAD
 ```{r}
 glm(isch_cva ~ gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -175,56 +175,56 @@ glm(isch_cva ~ gib_vad, family = "binomial", data = df) %>%
 ### Age
 ```{r}
 glm(pump_thromb_cva ~ age, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### Female
 ```{r}
 glm(pump_thromb_cva ~ female, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### BMI
 ```{r}
 glm(pump_thromb_cva ~ bmi, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### A.fib
 ```{r}
 glm(pump_thromb_cva ~ afib, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### CAD
 ```{r}
 glm(pump_thromb_cva ~ cad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### HTN
 ```{r}
 glm(pump_thromb_cva ~ htn, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### DM
 ```{r}
 glm(pump_thromb_cva ~ dm, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### GIB with VAD
 ```{r}
 glm(pump_thromb_cva ~ gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -233,56 +233,56 @@ glm(pump_thromb_cva ~ gib_vad, family = "binomial", data = df) %>%
 ### Age
 ```{r}
 glm(hemor_cva ~ age, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### Female
 ```{r}
 glm(hemor_cva ~ female, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### BMI
 ```{r}
 glm(hemor_cva ~ bmi, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### A.fib
 ```{r}
 glm(hemor_cva ~ afib, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### CAD
 ```{r}
 glm(hemor_cva ~ cad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### HTN
 ```{r}
 glm(hemor_cva ~ htn, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### DM
 ```{r}
 glm(hemor_cva ~ dm, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
 ### GIB with VAD
 ```{r}
 glm(hemor_cva ~ gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -292,7 +292,7 @@ glm(hemor_cva ~ gib_vad, family = "binomial", data = df) %>%
 
 ```{r}
 glm(pump_thrombosis ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -300,7 +300,7 @@ glm(pump_thrombosis ~ age + female + bmi + afib + cad + htn + dm + gib_vad, fami
 
 ```{r}
 glm(isch_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -308,7 +308,7 @@ glm(isch_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "b
 
 ```{r}
 glm(pump_thromb_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -316,7 +316,7 @@ glm(pump_thromb_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, fami
 
 ```{r}
 glm(hemor_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -327,7 +327,7 @@ glm(hemor_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "
 ```{r}
 glm(pump_thrombosis ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
     stepAIC(direction = "backward", trace = FALSE) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -336,7 +336,7 @@ glm(pump_thrombosis ~ age + female + bmi + afib + cad + htn + dm + gib_vad, fami
 ```{r}
 glm(isch_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
     stepAIC(direction = "backward", trace = FALSE) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -345,7 +345,7 @@ glm(isch_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "b
 ```{r}
 glm(pump_thromb_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
     stepAIC(direction = "backward", trace = FALSE) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
 
@@ -354,6 +354,6 @@ glm(pump_thromb_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, fami
 ```{r}
 glm(hemor_cva ~ age + female + bmi + afib + cad + htn + dm + gib_vad, family = "binomial", data = df) %>%
     stepAIC(direction = "backward", trace = FALSE) %>%
-    tidy() %>%
+    tidy(conf.int = TRUE, exponentiate = TRUE) %>%
     knitr::kable(digits = 3)
 ```
