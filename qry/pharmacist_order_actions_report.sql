@@ -12,8 +12,32 @@ WITH ORD_ACTIONS AS (
 		ORDERS
 	WHERE
 		ORDER_ACTION.ACTION_DT_TM BETWEEN
+		/*
 			pi_to_gmt(TRUNC(SYSDATE) - 2, pi_time_zone(2, @Variable('BOUSER')))
 			AND pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER')))
+		*/
+		
+			DECODE(
+				@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
+				'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 2, pi_time_zone(2, @Variable('BOUSER'))),
+				'User-defined', pi_to_gmt(
+					TO_DATE(
+						@Prompt('Enter begin date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:80),
+						pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+					),
+					pi_time_zone(1, @Variable('BOUSER')))
+			)
+			AND DECODE(
+				@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
+				'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER'))),
+				'User-defined', pi_to_gmt(
+					TO_DATE(
+						@Prompt('Enter end date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 23:59:59'}, User:81),
+						pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+					),
+					pi_time_zone(1, @Variable('BOUSER')))
+			)
+		
 		AND ORDER_ACTION.ORDER_ID = ORDERS.ORDER_ID
 		AND ORDERS.CATALOG_TYPE_CD = 1363 -- Pharmacy
 		AND ORDERS.ACTIVITY_TYPE_CD = 378 -- Pharmacy
@@ -46,7 +70,8 @@ WITH ORD_ACTIONS AS (
 		PRSNL.NAME_FULL_FORMATTED,
 		ORD_ACTIONS.ACTION_TYPE_CD,
 		ENCNTR_LOC_HIST.LOC_NURSE_UNIT_CD,
-		ORD_ACTIONS.ORDER_ID
+		ORD_ACTIONS.ORDER_ID,
+		ORDER_REVIEW.REVIEWED_STATUS_FLAG
 	FROM
 		ENCNTR_LOC_HIST,
 		ORD_ACTIONS,
@@ -58,7 +83,7 @@ WITH ORD_ACTIONS AS (
 		AND ORD_ACTIONS.ORDER_ID = ORDER_REVIEW.ORDER_ID
 		AND ORD_ACTIONS.ACTION_SEQUENCE = ORDER_REVIEW.ACTION_SEQUENCE
 		AND ORDER_REVIEW.REVIEW_TYPE_FLAG = 3 -- Pharmacist
-		AND ORDER_REVIEW.REVIEWED_STATUS_FLAG = 1
+		AND ORDER_REVIEW.REVIEWED_STATUS_FLAG IN (1, 2, 5)
 		AND ORDER_REVIEW.REVIEW_PERSONNEL_ID = PRSNL.PERSON_ID
 		AND ORD_ACTIONS.ENCNTR_ID = ENCNTR_LOC_HIST.ENCNTR_ID
 		AND ENCNTR_LOC_HIST.BEG_EFFECTIVE_DT_TM <= ORD_ACTIONS.ACTION_DT_TM
@@ -81,10 +106,39 @@ SELECT DISTINCT
 	pi_get_cv_display(REVIEWS.CATALOG_CD) AS MEDICATION,
 	pi_get_cv_display(REVIEWS.ACTION_TYPE_CD) AS ACTION_TYPE,
 	pi_get_cv_display(REVIEWS.LOC_NURSE_UNIT_CD) AS NURSE_UNIT,
-	REVIEWS.ORDER_ID
+	REVIEWS.ORDER_ID,
+	CASE REVIEWS.REVIEWED_STATUS_FLAG
+		WHEN 1 THEN 'Accepted'
+		WHEN 2 THEN 'Rejected'
+		WHEN 5 THEN 'Reviewed'
+	END AS VERIFIED_STATUS
 FROM
 	REVIEWS
 WHERE
 	REVIEWS.REVIEW_DT_TM BETWEEN
+/*
 		pi_to_gmt(TRUNC(SYSDATE) - 1, pi_time_zone(2, @Variable('BOUSER')))
 		AND pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER')))
+*/
+		DECODE(
+			@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
+			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 1, pi_time_zone(2, @Variable('BOUSER'))),
+			'User-defined', pi_to_gmt(
+				TO_DATE(
+					@Prompt('Enter begin date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:80),
+					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+				),
+				pi_time_zone(1, @Variable('BOUSER')))
+		)
+		AND DECODE(
+			@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
+			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER'))),
+			'User-defined', pi_to_gmt(
+				TO_DATE(
+					@Prompt('Enter end date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 23:59:59'}, User:81),
+					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+				),
+				pi_time_zone(1, @Variable('BOUSER')))
+		)
+		
+-- //mh.org/public/HER/HER - Pharmacy/Order Actions Report
