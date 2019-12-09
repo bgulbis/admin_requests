@@ -70,3 +70,6 @@ WHERE
 		1099966301 -- HH Oncology TMC
 	)
 	AND ENCNTR_LOC_HIST.END_EFFECTIVE_DT_TM >= ORDER_ACTION.ACTION_DT_TM
+
+-- //mh.org/public/HER/HER - Pharmacy/Order Actions Report
+-- //mh.org/public/HER/HER - Pharmacy/Order Actions Report/Cumulative
