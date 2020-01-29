@@ -1,6 +1,5 @@
 library(tidyverse)
 library(readxl)
-library(edwr)
 
 df <- read_excel(
     "U:/Data/admin_requests/mhosh/fy19_spine-fusion_patients.xlsx", 
@@ -22,10 +21,10 @@ df <- read_excel(
 ) %>%
     filter(!is.na(fin))
 
-mbo_fin <- concat_encounters(df$fin)
+mbo_fin <- edwr::concat_encounters(df$fin)
 print(mbo_fin)
 
-meds <- read_excel("data/external/opioids_clinical-event_code-value.xlsx") %>%
-    mutate(sql_cd = paste0(CODE_VALUE, ", --", DISPLAY))
-
-openxlsx::write.xlsx(meds, "data/external/event_cd.xlsx")
+# meds <- read_excel("data/external/opioids_clinical-event_code-value.xlsx") %>%
+#     mutate(sql_cd = paste0(CODE_VALUE, ", --", DISPLAY))
+# 
+# openxlsx::write.xlsx(meds, "data/external/event_cd.xlsx")

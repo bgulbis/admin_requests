@@ -2,7 +2,8 @@ WITH PT_LIST AS (
 	SELECT DISTINCT
 		ENCNTR_ALIAS.ALIAS,
 		ENCOUNTER.ENCNTR_ID,
-		SURGICAL_CASE.SURG_STOP_DT_TM
+		SURGICAL_CASE.SURG_STOP_DT_TM,
+		ENCOUNTER.DISCH_DT_TM
 	FROM
 		ENCNTR_ALIAS,
 		ENCOUNTER,
@@ -17,79 +18,170 @@ WITH PT_LIST AS (
 		AND SURGICAL_CASE.SURG_AREA_CD > 0
 		AND SURGICAL_CASE.SURG_CASE_ID = SURG_CASE_PROCEDURE.SURG_CASE_ID
 		AND SURG_CASE_PROCEDURE.ACTIVE_IND = 1
+), DOSES AS (
+	SELECT DISTINCT
+		PT_LIST.ENCNTR_ID,
+		CLINICAL_EVENT.EVENT_ID,
+		CLINICAL_EVENT.EVENT_CD,
+		ORDERS.ORDER_MNEMONIC,
+		CE_MED_RESULT.ADMIN_DOSAGE,
+		CE_MED_RESULT.DOSAGE_UNIT_CD,
+		CE_MED_RESULT.INFUSION_RATE AS RATE,
+		CE_MED_RESULT.INFUSION_UNIT_CD,
+		CE_MED_RESULT.IV_EVENT_CD,
+		CE_MED_RESULT.ADMIN_ROUTE_CD,
+		CASE 
+			WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), 'pca') > 0 THEN 0
+			WHEN pi_get_cv_display(CE_MED_RESULT.DOSAGE_UNIT_CD) = 'tab' THEN 
+				CASE 
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '50( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 50
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '30( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 30
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '15( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 15
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '10( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 10
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '7.5( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 7.5
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '5( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 5
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '4( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 4
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '2( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 2
+					WHEN REGEXP_INSTR(LOWER(ORDERS.ORDER_MNEMONIC), '1( )?mg') > 0 THEN CE_MED_RESULT.ADMIN_DOSAGE * 1
+				END
+			WHEN pi_get_cv_display(CE_MED_RESULT.DOSAGE_UNIT_CD) = 'microgram' THEN CE_MED_RESULT.ADMIN_DOSAGE / 1000
+			ELSE CE_MED_RESULT.ADMIN_DOSAGE
+		END AS DOSE_MG,
+		CASE
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'codeine') > 0 THEN 0.15
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'fentanyl') > 0 THEN
+				CASE 
+					WHEN REGEXP_INSTR(pi_get_cv_display(CE_MED_RESULT.ADMIN_ROUTE_CD), 'IM|IV|INJ') > 0 THEN 300
+					WHEN REGEXP_INSTR(pi_get_cv_display(CE_MED_RESULT.ADMIN_ROUTE_CD), 'TOP') > 0 THEN 7200
+					ELSE 100
+				END
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'hydrocodone') > 0 THEN 1
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'hydromorphone') > 0 THEN 
+				CASE 
+					WHEN REGEXP_INSTR(pi_get_cv_display(CE_MED_RESULT.ADMIN_ROUTE_CD), 'IM|IV|INJ') > 0 THEN 20
+					ELSE 4
+				END
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'meperidine') > 0 THEN 0.3
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'morphine') > 0 THEN
+				CASE 
+					WHEN REGEXP_INSTR(pi_get_cv_display(CE_MED_RESULT.ADMIN_ROUTE_CD), 'IM|IV|INJ') > 0 THEN 3
+					ELSE 1
+				END		
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'oxycodone') > 0 THEN 1.5
+			WHEN REGEXP_INSTR(LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)), 'tramadol') > 0 THEN 0.1
+		END AS ORAL_MME_CONVERSION
+	FROM
+		CE_MED_RESULT,
+		CLINICAL_EVENT,
+		ORDERS,
+		PT_LIST
+	WHERE
+		PT_LIST.ENCNTR_ID = CLINICAL_EVENT.ENCNTR_ID
+		AND CLINICAL_EVENT.EVENT_CLASS_CD = 158 -- MED
+		AND CLINICAL_EVENT.EVENT_CD IN (
+			37556014, --acetaminophen-codeine
+			37556016, --acetaminophen-hydrocodone
+			37556017, --acetaminophen-oxycodone
+			37556018, --acetaminophen-pentazocine
+			37556023, --acetaminophen-tramadol
+			37556061, --alfentanil
+			37556161, --APAP/butalbital/caffeine/codeine
+			37556163, --APAP/caffeine/dihydrocodeine
+			37556178, --ASA/butalbital/caffeine/codeine
+			37556179, --ASA/caffeine/dihydrocodeine
+			37556181, --ASA/caffeine/propoxyphene
+			37556193, --aspirin-codeine
+			37556197, --aspirin-oxycodone
+			37556198, --aspirin-pentazocine
+			37556263, --belladonna-opium
+			37556352, --buprenorphine
+			37556359, --butorphanol
+			37556595, --codeine
+			37556814, --droperidol-fentanyl
+			37556956, --FENTanyl
+			37557191, --HYDROcodone-ibuprofen
+			37557204, --HYDROmorphone
+			37557424, --levorphanol
+			37557517, --meperidine
+			37557519, --meperidine-promethazine
+			37557538, --methadone
+			37557620, --morphine Sulfate
+			37557645, --nalbuphine
+			37557648, --naloxone-pentazocine
+			37557727, --opium
+			37557746, --OXYcodone
+			37557790, --pentazocine
+			37557973, --remifentanil
+			37558121, --sufentanil
+			37558239, --tramadol
+			99783187, --morphine liposomal
+			103856893, --fentanyl-ropivacaine
+			117038566, --bupivacaine-fentanyl
+			117038567, --bupivacaine-hydromorphone
+			117038568, --buprenorphine-naloxone
+			117038681, --dihydrocodeine
+			117038771, --HYDROcodone
+			117038789, --ibuprofen-oxycodone
+			117038901, --oxymorphone
+			405732895, --tapentadol
+			423546842, --morphine-naltrexone
+			538590483, --ropivacaine-sufentanil
+			1651062812, --HYDROmorphone-ropivacaine
+			2180033613, --bupivacaine-SUFentanil
+			3135779565 --acetaminophen-benzhydrocodone
+		)
+		AND CLINICAL_EVENT.EVENT_END_DT_TM > PT_LIST.SURG_STOP_DT_TM
+		AND CLINICAL_EVENT.EVENT_ID = CE_MED_RESULT.EVENT_ID
+		AND CLINICAL_EVENT.ORDER_ID = ORDERS.ORDER_ID
+), MME_CALC AS (
+	SELECT
+		DOSES.*,
+		DOSE_MG * ORAL_MME_CONVERSION AS ORAL_MME
+	FROM
+		DOSES
+), MME_TOTALS AS (
+	SELECT 
+		MME_CALC.ENCNTR_ID,
+		SUM(MME_CALC.ORAL_MME) AS ORAL_MME_TOTAL
+	FROM
+		MME_CALC
+	GROUP BY
+		MME_CALC.ENCNTR_ID
+), PT_LOS AS (
+	SELECT
+		PT_LIST.ALIAS,
+		PT_LIST.ENCNTR_ID,
+		PT_LIST.DISCH_DT_TM,
+		MIN(PT_LIST.SURG_STOP_DT_TM) AS SURG_STOP_DT_TM
+	FROM
+		PT_LIST
+	GROUP BY
+		PT_LIST.ALIAS,
+		PT_LIST.ENCNTR_ID,
+		PT_LIST.DISCH_DT_TM
 )
 
-SELECT
-	PT_LIST.ALIAS AS FIN,
-	pi_from_gmt(CLINICAL_EVENT.EVENT_END_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))) AS DOSE_DATETIME,
-	pi_get_cv_display(CLINICAL_EVENT.EVENT_CD) AS MEDICATION,
-	ORDERS.ORDER_MNEMONIC AS MED_PRODUCT,
-	CE_MED_RESULT.ADMIN_DOSAGE AS DOSE,
-	pi_get_cv_display(CE_MED_RESULT.DOSAGE_UNIT_CD) AS DOSE_UNIT,
-	CE_MED_RESULT.INFUSION_RATE AS RATE,
-	pi_get_cv_display(CE_MED_RESULT.INFUSION_UNIT_CD) AS RATE_UNIT,
-	pi_get_cv_display(CE_MED_RESULT.IV_EVENT_CD) AS IV_EVENT,
-	pi_get_cv_display(CE_MED_RESULT.ADMIN_ROUTE_CD) AS ROUTE
+SELECT 
+	PT_LOS.ALIAS AS FIN,
+	MME_TOTALS.ORAL_MME_TOTAL,
+	PT_LOS.DISCH_DT_TM - PT_LOS.SURG_STOP_DT_TM AS LOS_AFTER_SURGERY,
+	MME_TOTALS.ORAL_MME_TOTAL / (PT_LOS.DISCH_DT_TM - PT_LOS.SURG_STOP_DT_TM) AS ORAL_MME_PER_DAY
 FROM
-	CE_MED_RESULT,
-	CLINICAL_EVENT,
-	ORDERS,
-	PT_LIST
+	MME_TOTALS,
+	PT_LOS
 WHERE
-	PT_LIST.ENCNTR_ID = CLINICAL_EVENT.ENCNTR_ID
-	AND CLINICAL_EVENT.EVENT_CLASS_CD = 158 -- MED
-	AND CLINICAL_EVENT.EVENT_CD IN (
-		37556014, --acetaminophen-codeine
-		37556016, --acetaminophen-hydrocodone
-		37556017, --acetaminophen-oxycodone
-		37556018, --acetaminophen-pentazocine
-		37556023, --acetaminophen-tramadol
-		37556061, --alfentanil
-		37556161, --APAP/butalbital/caffeine/codeine
-		37556163, --APAP/caffeine/dihydrocodeine
-		37556178, --ASA/butalbital/caffeine/codeine
-		37556179, --ASA/caffeine/dihydrocodeine
-		37556181, --ASA/caffeine/propoxyphene
-		37556193, --aspirin-codeine
-		37556197, --aspirin-oxycodone
-		37556198, --aspirin-pentazocine
-		37556263, --belladonna-opium
-		37556352, --buprenorphine
-		37556359, --butorphanol
-		37556595, --codeine
-		37556814, --droperidol-fentanyl
-		37556956, --FENTanyl
-		37557191, --HYDROcodone-ibuprofen
-		37557204, --HYDROmorphone
-		37557424, --levorphanol
-		37557517, --meperidine
-		37557519, --meperidine-promethazine
-		37557538, --methadone
-		37557620, --morphine Sulfate
-		37557645, --nalbuphine
-		37557648, --naloxone-pentazocine
-		37557727, --opium
-		37557746, --OXYcodone
-		37557790, --pentazocine
-		37557973, --remifentanil
-		37558121, --sufentanil
-		37558239, --tramadol
-		99783187, --morphine liposomal
-		103856893, --fentanyl-ropivacaine
-		117038566, --bupivacaine-fentanyl
-		117038567, --bupivacaine-hydromorphone
-		117038568, --buprenorphine-naloxone
-		117038681, --dihydrocodeine
-		117038771, --HYDROcodone
-		117038789, --ibuprofen-oxycodone
-		117038901, --oxymorphone
-		405732895, --tapentadol
-		423546842, --morphine-naltrexone
-		538590483, --ropivacaine-sufentanil
-		1651062812, --HYDROmorphone-ropivacaine
-		2180033613, --bupivacaine-SUFentanil
-		3135779565 --acetaminophen-benzhydrocodone
-	)
-	AND CLINICAL_EVENT.EVENT_END_DT_TM > PT_LIST.SURG_STOP_DT_TM
-	AND CLINICAL_EVENT.EVENT_ID = CE_MED_RESULT.EVENT_ID
-	AND CLINICAL_EVENT.ORDER_ID = ORDERS.ORDER_ID
+	PT_LOS.ENCNTR_ID = MME_TOTALS.ENCNTR_ID
+
+/*
+		PT_LIST.ALIAS AS FIN,
+		pi_from_gmt(CLINICAL_EVENT.EVENT_END_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))) AS DOSE_DATETIME,
+		LOWER(pi_get_cv_display(CLINICAL_EVENT.EVENT_CD)) AS MEDICATION,
+		LOWER(ORDERS.ORDER_MNEMONIC) AS MED_PRODUCT,
+		CE_MED_RESULT.ADMIN_DOSAGE AS DOSE,
+		CE_MED_RESULT.DOSAGE_UNIT_CD,
+		pi_get_cv_display(CE_MED_RESULT.DOSAGE_UNIT_CD) AS DOSE_UNIT,
+		CE_MED_RESULT.INFUSION_RATE AS RATE,
+		pi_get_cv_display(CE_MED_RESULT.INFUSION_UNIT_CD) AS RATE_UNIT,
+		pi_get_cv_display(CE_MED_RESULT.IV_EVENT_CD) AS IV_EVENT,
+		pi_get_cv_display(CE_MED_RESULT.ADMIN_ROUTE_CD) AS ROUTE,
+*/
