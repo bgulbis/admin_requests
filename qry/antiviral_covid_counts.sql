@@ -1,0 +1,58 @@
+SELECT DISTINCT
+	pi_get_cv_display(CLINICAL_EVENT.EVENT_CD) AS MEDICATION,
+	pi_get_cv_display(ENCNTR_LOC_HIST.LOC_FACILITY_CD) AS FACILITY,
+	-- pi_get_cv_display(ENCNTR_LOC_HIST.LOC_NURSE_UNIT_CD) AS NURSE_UNIT,
+	TRUNC(pi_from_gmt(CLINICAL_EVENT.EVENT_END_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))), 'MONTH') AS MED_MONTH,
+	COUNT(DISTINCT CLINICAL_EVENT.EVENT_ID) AS NUM_DOSES,
+	COUNT(DISTINCT CLINICAL_EVENT.ENCNTR_ID) AS NUM_PTS
+FROM
+	CE_MED_RESULT,
+	CLINICAL_EVENT,
+	ENCNTR_LOC_HIST
+WHERE
+	CLINICAL_EVENT.EVENT_CD IN (
+		37557209, -- hydroxychloroquine
+		37557450, -- lopinavir-ritonavir
+		37557980 -- ribavirin
+	)
+	-- AND CLINICAL_EVENT.EVENT_CLASS_CD = 158 -- MED
+	AND CLINICAL_EVENT.EVENT_END_DT_TM BETWEEN
+			pi_to_gmt(
+				TO_DATE(
+					@Prompt('Enter begin date', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:0), 
+					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+				), 
+				pi_time_zone(1, @Variable('BOUSER'))
+			)
+			AND pi_to_gmt(
+				TO_DATE(
+					@Prompt('Enter end date', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:1), 
+					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+				) - 1/86400, 
+				pi_time_zone(1, @Variable('BOUSER'))
+			)
+	AND CLINICAL_EVENT.ENCNTR_ID = ENCNTR_LOC_HIST.ENCNTR_ID
+	AND ENCNTR_LOC_HIST.BEG_EFFECTIVE_DT_TM <= CLINICAL_EVENT.EVENT_END_DT_TM
+	AND ENCNTR_LOC_HIST.TRANSACTION_DT_TM = (
+		SELECT MAX(ELH.TRANSACTION_DT_TM)
+		FROM ENCNTR_LOC_HIST ELH
+		WHERE
+			CLINICAL_EVENT.ENCNTR_ID = ELH.ENCNTR_ID
+			AND ELH.TRANSACTION_DT_TM <= CLINICAL_EVENT.EVENT_END_DT_TM
+	)
+	AND ENCNTR_LOC_HIST.END_EFFECTIVE_DT_TM >= CLINICAL_EVENT.EVENT_END_DT_TM
+	AND ENCNTR_LOC_HIST.LOC_FACILITY_CD IN (
+		3310, -- HH HERMANN
+		3796, -- HC Childrens
+		3821, -- HH Clinics
+		3822, -- HH Trans Care
+		3823, -- HH Rehab
+		1099966301 -- HH Oncology TMC			
+	)
+	AND CLINICAL_EVENT.EVENT_ID = CE_MED_RESULT.EVENT_ID
+	AND CE_MED_RESULT.ADMIN_DOSAGE > 0
+GROUP BY
+	CLINICAL_EVENT.EVENT_CD,
+	ENCNTR_LOC_HIST.LOC_FACILITY_CD,
+	-- ENCNTR_LOC_HIST.LOC_NURSE_UNIT_CD,
+	TRUNC(pi_from_gmt(CLINICAL_EVENT.EVENT_END_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))), 'MONTH')
