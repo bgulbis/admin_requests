@@ -12,8 +12,8 @@ FROM
 	ORDER_PRODUCT
 WHERE
 	CLINICAL_EVENT.EVENT_CD IN (
-		37556889 -- esmolol
-		--37557367, -- ketamine
+		-- 37556889 -- esmolol
+		37557367 -- ketamine
 		--37557675, -- niCARdipine
 		--37558323 -- vasopressin
 	)
