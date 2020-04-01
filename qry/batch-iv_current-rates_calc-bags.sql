@@ -41,6 +41,7 @@ WITH DOSES AS (
 		AND CLINICAL_EVENT.ORDER_ID = ORDER_PRODUCT.ORDER_ID
 		AND ORDER_PRODUCT.ITEM_ID IN (
 			275733495, -- ketAMINE 10 mg/mL in NS 50 mL syringe
+			2931843, -- ketAMINE 500 mg/10 ml INJ VL
 			3639548, -- esmolol 2500 mg-NS 250 ml premix
 			234040263, -- esmolol 2500 mg/H20 250 mL Premix
 			2894335, -- esmolol 100 mg/10 ml INJ VL
