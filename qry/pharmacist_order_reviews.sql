@@ -2,9 +2,9 @@ SELECT
 	ORDER_REVIEW.ORDER_ID,
 	ORDER_REVIEW.ACTION_SEQUENCE,
 	ORDER_REVIEW.REVIEW_SEQUENCE,
-	pi_from_gmt(ORDER_ACTION.ACTION_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))) AS ACTION_DATETIME,
-	pi_from_gmt(ORDER_REVIEW.REVIEW_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))) AS REVIEW_DATETIME,
-	pi_from_gmt(TRUNC(ORDER_REVIEW.REVIEW_DT_TM, 'HH'), (pi_time_zone(1, @Variable('BOUSER')))) AS REVIEW_HOUR,
+	pi_from_gmt(ORDER_ACTION.ACTION_DT_TM, 'America/Chicago') AS ACTION_DATETIME,
+	pi_from_gmt(ORDER_REVIEW.REVIEW_DT_TM, 'America/Chicago') AS REVIEW_DATETIME,
+	pi_from_gmt(TRUNC(ORDER_REVIEW.REVIEW_DT_TM, 'HH'), 'America/Chicago') AS REVIEW_HOUR,
 	(ORDER_REVIEW.REVIEW_DT_TM - ORDER_ACTION.ACTION_DT_TM) * 24 * 60 AS ORDER_REVIEW_MIN,
 	PRSNL.NAME_FULL_FORMATTED AS PHARMACIST,
 	pi_get_cv_display(ORDERS.CATALOG_CD) AS MEDICATION,
@@ -25,25 +25,27 @@ WHERE
 	ORDER_REVIEW.UPDT_DT_TM BETWEEN
 		DECODE(
 			@Prompt('Choose date range', 'A', {'Yesterday', 'Two Weeks', 'User-defined'}, mono, free, , , User:79),
-			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 1, pi_time_zone(2, @Variable('BOUSER'))),
-			'Two Weeks', pi_to_gmt(TRUNC(SYSDATE - 14, 'DAY'), pi_time_zone(2, @Variable('BOUSER'))),
+			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 1, 'America/Chicago'),
+			'Two Weeks', pi_to_gmt(TRUNC(SYSDATE - 14, 'DAY'), 'America/Chicago'),
 			'User-defined', pi_to_gmt(
 				TO_DATE(
 					@Prompt('Enter begin date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:80),
 					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
 				),
-				pi_time_zone(1, @Variable('BOUSER')))
+				'America/Chicago'
+			)
 		)
 		AND DECODE(
 			@Prompt('Choose date range', 'A', {'Yesterday', 'Two Weeks', 'User-defined'}, mono, free, , , User:79),
-			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER'))),
-			'Two Weeks', pi_to_gmt(TRUNC(SYSDATE, 'DAY') - (1 / 86400), pi_time_zone(2, @Variable('BOUSER'))),
+			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 1/86400, 'America/Chicago'),
+			'Two Weeks', pi_to_gmt(TRUNC(SYSDATE, 'DAY') - 1/86400, 'America/Chicago'),
 			'User-defined', pi_to_gmt(
 				TO_DATE(
 					@Prompt('Enter end date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 23:59:59'}, User:81),
 					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
 				),
-				pi_time_zone(1, @Variable('BOUSER')))
+				'America/Chicago'
+			)
 		)
 	AND ORDER_REVIEW.REVIEW_TYPE_FLAG = 3 -- Pharmacist
 	AND ORDER_REVIEW.REVIEWED_STATUS_FLAG IN (1, 2, 5)

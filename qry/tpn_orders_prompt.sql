@@ -2,9 +2,11 @@ SELECT DISTINCT
 	pi_get_cv_display(ORDERS.CATALOG_CD) AS TPN_ORDER,
 	PERSON.NAME_FULL_FORMATTED AS PATIENT_NAME,
 	ENCNTR_ALIAS.ALIAS AS FIN,
+	ORDERS.ORIG_ORDER_DT_TM,
 	pi_from_gmt(ORDERS.ORIG_ORDER_DT_TM, 'America/Chicago') AS ORDER_DATETIME,
 	pi_get_cv_display(ENCOUNTER.LOC_NURSE_UNIT_CD) AS NURSE_UNIT,
-	PRSNL.NAME_FULL_FORMATTED AS PROVIDER
+	PRSNL.NAME_FULL_FORMATTED AS PROVIDER,
+	ORDERS.ORDER_ID
 FROM
 	ENCNTR_ALIAS,
 	ENCOUNTER,
@@ -26,8 +28,20 @@ WHERE
 	)
 	AND	ORDERS.TEMPLATE_ORDER_FLAG IN (0, 1)
 	AND ORDERS.ORIG_ORDER_DT_TM BETWEEN
-		pi_to_gmt(TRUNC(SYSDATE), 'America/Chicago')
-		AND pi_to_gmt(SYSDATE, 'America/Chicago')
+		pi_to_gmt(
+			TO_DATE(
+				@Prompt('Enter begin date', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:0), 
+				pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+			), 
+			'America/Chicago'
+		)
+		AND pi_to_gmt(
+			TO_DATE(
+				@Prompt('Enter end date', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:1), 
+				pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+			) - 1/86400, 
+			'America/Chicago'
+		)
 	AND ORDERS.ORIG_ORD_AS_FLAG = 0
 	AND ORDERS.ENCNTR_ID = ENCOUNTER.ENCNTR_ID
 	AND ENCOUNTER.LOC_FACILITY_CD IN (

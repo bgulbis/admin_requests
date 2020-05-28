@@ -13,29 +13,29 @@ WITH ORD_ACTIONS AS (
 	WHERE
 		ORDER_ACTION.ACTION_DT_TM BETWEEN
 		/*
-			pi_to_gmt(TRUNC(SYSDATE) - 2, pi_time_zone(2, @Variable('BOUSER')))
-			AND pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER')))
+			pi_to_gmt(TRUNC(SYSDATE) - 2, 'America/Chicago')
+			AND pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), 'America/Chicago')
 		*/
 		
 			DECODE(
 				@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
-				'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 2, pi_time_zone(2, @Variable('BOUSER'))),
+				'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 2, 'America/Chicago'),
 				'User-defined', pi_to_gmt(
 					TO_DATE(
 						@Prompt('Enter begin date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:80),
 						pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
 					),
-					pi_time_zone(1, @Variable('BOUSER')))
+					'America/Chicago'
 			)
 			AND DECODE(
 				@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
-				'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER'))),
+				'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), 'America/Chicago'),
 				'User-defined', pi_to_gmt(
 					TO_DATE(
 						@Prompt('Enter end date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 23:59:59'}, User:81),
 						pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
 					),
-					pi_time_zone(1, @Variable('BOUSER')))
+					'America/Chicago'
 			)
 		
 		AND ORDER_ACTION.ORDER_ID = ORDERS.ORDER_ID
@@ -98,9 +98,9 @@ WITH ORD_ACTIONS AS (
 )
 
 SELECT DISTINCT
-	pi_from_gmt(TRUNC(REVIEWS.REVIEW_DT_TM, 'HH'), (pi_time_zone(1, @Variable('BOUSER')))) AS REVIEW_HOUR,
-	pi_from_gmt(REVIEWS.ACTION_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))) AS ORDER_DATETIME,
-	pi_from_gmt(REVIEWS.REVIEW_DT_TM, (pi_time_zone(1, @Variable('BOUSER')))) AS REVIEW_DATETIME,
+	pi_from_gmt(TRUNC(REVIEWS.REVIEW_DT_TM, 'HH'), 'America/Chicago') AS REVIEW_HOUR,
+	pi_from_gmt(REVIEWS.ACTION_DT_TM, 'America/Chicago') AS ORDER_DATETIME,
+	pi_from_gmt(REVIEWS.REVIEW_DT_TM, 'America/Chicago') AS REVIEW_DATETIME,
 	(REVIEWS.REVIEW_DT_TM - REVIEWS.ACTION_DT_TM) * 24 * 60 AS ORDER_REVIEW_MIN,
 	REVIEWS.NAME_FULL_FORMATTED AS PHARMACIST,
 	pi_get_cv_display(REVIEWS.CATALOG_CD) AS MEDICATION,
@@ -117,28 +117,28 @@ FROM
 WHERE
 	REVIEWS.REVIEW_DT_TM BETWEEN
 /*
-		pi_to_gmt(TRUNC(SYSDATE) - 1, pi_time_zone(2, @Variable('BOUSER')))
-		AND pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER')))
+		pi_to_gmt(TRUNC(SYSDATE) - 1, 'America/Chicago')
+		AND pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), 'America/Chicago')
 */
 		DECODE(
 			@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
-			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 1, pi_time_zone(2, @Variable('BOUSER'))),
+			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - 1, 'America/Chicago'),
 			'User-defined', pi_to_gmt(
 				TO_DATE(
 					@Prompt('Enter begin date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 00:00:00'}, User:80),
 					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
 				),
-				pi_time_zone(1, @Variable('BOUSER')))
+				'America/Chicago'
 		)
 		AND DECODE(
 			@Prompt('Choose date range', 'A', {'Yesterday', 'User-defined'}, mono, free, , , User:79),
-			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), pi_time_zone(2, @Variable('BOUSER'))),
+			'Yesterday', pi_to_gmt(TRUNC(SYSDATE) - (1 / 86400), 'America/Chicago'),
 			'User-defined', pi_to_gmt(
 				TO_DATE(
 					@Prompt('Enter end date (Leave as 01/01/1800 if using a Relative Date)', 'D', , mono, free, persistent, {'01/01/1800 23:59:59'}, User:81),
 					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
 				),
-				pi_time_zone(1, @Variable('BOUSER')))
+				'America/Chicago'
 		)
 		
 -- //mh.org/public/HER/HER - Pharmacy/Order Actions Report
