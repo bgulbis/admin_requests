@@ -2,9 +2,9 @@ library(tidyverse)
 library(readxl)
 library(mbohelpr)
 
-data_dir <- "data/tidy/2019-09_burn_cse"
+data_dir <- "U:/Data/admin_requests/burn_cse/"
 
-df <- read_excel("data/external/2019-09_burn_cse/burn_cse_patients_baseline.xlsx") %>%
+df <- read_excel("U:/Data/admin_requests/burn_cse/external/burn_cse_patients_baseline.xlsx") %>%
     rename(fin = `Encounter No`)
 
 fin <- edwr::concat_encounters(df$fin)
@@ -124,5 +124,5 @@ data_mme <- df_mme_meds %>%
         total_mme = sum(mme_iv, mme_drips, mme_pca, na.rm = TRUE),
         total_mme_no_tramadol = sum(mme_no_tramdol, mme_drips, mme_pca, na.rm = TRUE))
 
-openxlsx::write.xlsx(data_mme, "data/external/2019-09_burn_cse/burn_pts_morph_equivalents.xlsx")
+openxlsx::write.xlsx(data_mme, "U:/Data/admin_requests/burn_cse/final/burn_pts_morph_equivalents.xlsx")
 
