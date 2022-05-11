@@ -1,0 +1,24 @@
+Row
+-----------------------------------------------------
+
+### Inventory {.no-title}
+
+```{r}
+x <- filter(ts_data, product == p)
+y <- filter(df_fc_data_combo, product == p) |> 
+    mutate(.model = "A_Fcast")
+z <- filter(df_fc_data_ind, product == p)
+
+plotly_fable(
+    x, 
+    y = dose_quantity, 
+    combo = y, 
+    mods = z, 
+    title = paste("Product: ", p), 
+    ytitle = "Quantity",
+    width = NULL,
+    height = NULL
+)
+```
+
+> Click on the model name to display or hide it on the graph.

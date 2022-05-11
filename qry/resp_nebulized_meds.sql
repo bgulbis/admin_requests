@@ -17,20 +17,28 @@ WITH DOSES AS (
 			3823 -- HH Rehab
 		)
 		AND ENCOUNTER.REG_DT_TM BETWEEN 
-			pi_to_gmt(
-				TO_DATE(
-					@Prompt('Enter begin date', 'D', , mono, free, persistent, {'07/01/2021 00:00:00'}, User:0), 
-					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
-				), 
-				'America/Chicago'
+			DECODE(
+				@Prompt('Choose date range', 'A', {'Last Month', 'User-defined'}, mono, free, , , User:0),
+				'Last Month', pi_to_gmt(TRUNC(ADD_MONTHS(SYSDATE, -1), 'MONTH'), 'America/Chicago'),
+				'User-defined', pi_to_gmt(
+					TO_DATE(
+						@Prompt('Enter begin date', 'D', , mono, free, persistent, {'05/01/2021 00:00:00'}, User:1),
+						pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+					),
+					pi_time_zone(1, 'America/Chicago')
+				)
 			)
-			AND pi_to_gmt(
-				TO_DATE(
-					@Prompt('Enter end date', 'D', , mono, free, persistent, {'01/01/2022 00:00:00'}, User:1), 
-					pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
-				), 
-				'America/Chicago'
-			) - 1/86400
+			AND DECODE(
+				@Prompt('Choose date range', 'A', {'Last Month', 'User-defined'}, mono, free, , , User:0),
+				'Last Month', pi_to_gmt(TRUNC(SYSDATE, 'MONTH') - 1/86400, 'America/Chicago'),
+				'User-defined', pi_to_gmt(
+					TO_DATE(
+						@Prompt('Enter end date', 'D', , mono, free, persistent, {'05/01/2022 00:00:00'}, User:2),
+						pi_get_dm_info_char_gen('Date Format Mask|FT','PI EXP|Systems Configuration|Date Format Mask')
+					) - 1/86400,
+					pi_time_zone(1, 'America/Chicago')
+				)
+			)
 		AND ENCOUNTER.ENCNTR_ID = CLINICAL_EVENT.ENCNTR_ID
 		AND CLINICAL_EVENT.EVENT_CLASS_CD = 158 -- MED
 		AND ENCOUNTER.PERSON_ID = CLINICAL_EVENT.PERSON_ID

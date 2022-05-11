@@ -1,0 +1,147 @@
+---
+title: "IV Contrast Agent Forecast"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(fcasthelpr)
+library(flexdashboard)
+
+```
+
+```{r}
+f <- mbohelpr::set_data_path("admin_requests", "drug_shortages")
+
+ts_data <- read_rds(paste0(f, "final/ts_data.Rds"))
+df_fc_data_ind <- read_rds(paste0(f, "final/df_fc_data_ind.Rds"))
+df_fc_data_combo <- read_rds(paste0(f, "final/df_fc_data_combo.Rds"))
+```
+
+Iohexol 350/50
+=====================================================
+
+```{r}
+p <- "iohexol 350 mg/ml 50 ml VL"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iohexol 350/100
+=====================================================
+
+```{r}
+p <- "iohexol 350 mg/ml 100 ml inj"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iohexol 350/150
+=====================================================
+
+```{r}
+p <- "iohexol 350 mg/ml 150 ml INJ"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iohexol 300/10
+=====================================================
+
+```{r}
+p <- "iohexol 300 mg/ml 10 ml inj VL"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iohexol 300/50
+=====================================================
+
+```{r}
+p <- "iohexol 300 mg/ml 50 ml VL"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iohexol 300/100
+=====================================================
+
+```{r}
+p <- "iohexol 300 mg/ml 100 ml INJ (btl)"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iohexol 30/150
+=====================================================
+
+```{r}
+p <- "iohexol 300 mg/ml 150 ml INJ"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+
+Iodixanol 320/50
+=====================================================
+
+```{r}
+p <- "iodixanol 320 mg/ml 50 ml VL"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iodixanol 320/100
+=====================================================
+
+```{r}
+p <- "iodixanol 320 mg/ml 100 ml btl"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iodixanol 320/150
+=====================================================
+
+```{r}
+p <- "iodixanol 320 mg/ml 150 ml btl"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
+Iodixanol 320/200
+=====================================================
+
+```{r}
+p <- "iodixanol 320 mg/ml 200 ml"
+```
+
+```{r child="iv_contrast_child.Rmd"}
+
+```
+
