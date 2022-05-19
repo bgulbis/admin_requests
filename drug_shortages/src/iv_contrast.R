@@ -10,6 +10,9 @@ library(fcasthelpr)
 
 f <- set_data_path("admin_requests", "drug_shortages")
 
+intervention_start <- mdy("5/11/2022")
+pred_days <- 30
+
 raw_orders <- get_xlsx_data(path = paste0(f, "raw"), pattern = "iv_contrast_orders") |> 
 # raw_orders <- read_excel(paste0(f, "raw/iv_contrast_orders_2019-2022.xlsx")) |> 
     rename_all(str_to_lower)
@@ -20,14 +23,14 @@ df_orders <- raw_orders |>
 
 df_orders_daily <- df_orders |> 
     group_by(product, date) |> 
-    summarize(across(dose_quantity, sum, na.rm = TRUE)) |> 
+    summarize(across(dose_quantity, sum, na.rm = TRUE), .groups = "drop") |> 
     arrange(date, product) |> 
-    filter(!str_detect(product, "oral SOLN"))
+    filter(!str_detect(product, "oral SOLN")) 
 
 df_orders_monthly <- df_orders_daily |> 
     mutate(order_month = floor_date(date, unit = "month")) |> 
     group_by(product, order_month) |> 
-    summarize(across(dose_quantity, sum, na.rm = TRUE)) |> 
+    summarize(across(dose_quantity, sum, na.rm = TRUE), .groups = "drop") |> 
     arrange(order_month, product)
 
 df_orders_avg <- df_orders_monthly |> 
@@ -40,11 +43,13 @@ ts_data <- df_orders_daily |>
     semi_join(df_prod_select, by = "product") |> 
     mutate(across(date, as.Date)) |> 
     as_tsibble(key = product, index = date) |> 
-    fill_gaps(dose_quantity = 0L)
+    fill_gaps(dose_quantity = 0L) |> 
+    mutate(intervention = if_else(date >= intervention_start, TRUE, FALSE))
 
 fit_data <- ts_data |> 
     model(
-        ARIMA = ARIMA(dose_quantity),
+        # ARIMA = ARIMA(dose_quantity),
+        ARIMA = ARIMA(dose_quantity ~ intervention),
         ARIMA_D = decomposition_model(
             STL(dose_quantity),
             ARIMA(trend),
@@ -65,7 +70,18 @@ fit_data <- ts_data |>
 
 # x <- accuracy(fit_data)
 
-fc_data <- forecast(fit_data, h = 30)
+start_date <- max(ts_data$date) + 1
+stop_date <- max(ts_data$date) + pred_days
+
+xreg_intervention <- tibble(date = seq.Date(start_date, stop_date, by = "day")) |> 
+    mutate(intervention = if_else(date >= intervention_start, TRUE, FALSE)) 
+
+xreg_data <- df_orders_daily |> 
+    distinct(product) |> 
+    full_join(xreg_intervention, by = character()) |> 
+    as_tsibble(key = product, index = date) 
+    
+fc_data <- forecast(fit_data, h = pred_days, new_data = xreg_data)
 
 # df_decomp <- ts_data |> 
 #     model(STL(dose_quantity)) |> 
@@ -143,7 +159,7 @@ df_fc_data_ind <- df_fc_data %>%
 
 df_data_hilo <- df_fc_data_ind %>%
     group_by(product, date) %>%
-    summarize(across(c(lo_80, hi_80, lo_95, hi_95), mean, na.rm = TRUE))
+    summarize(across(c(lo_80, hi_80, lo_95, hi_95), mean, na.rm = TRUE), .groups = "drop")
 
 df_fc_data_combo <- df_fc_data %>%
     as_tibble() %>%
