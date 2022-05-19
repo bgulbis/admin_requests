@@ -179,3 +179,22 @@ write_rds(ts_data, paste0(f, "final/ts_data.Rds"))
 write_rds(df_fc_data_ind, paste0(f, "final/df_fc_data_ind.Rds"))
 write_rds(df_fc_data_combo, paste0(f, "final/df_fc_data_combo.Rds")) 
 # write_rds(df_inventory, "data/final/df_inventory.Rds")
+
+
+
+# weekly data -------------------------------------------------------------
+
+df_weekly <- ts_data |>
+    as_tibble() |>
+    mutate(.model = "Actual") |>
+    rename(.mean = dose_quantity) |>
+    bind_rows(df_fc_data_combo) |>
+    arrange(product, .model, date) |> 
+    mutate(week_of = floor_date(date, unit = "week")) |> 
+    group_by(product, week_of) |> 
+    summarize(across(c(.mean, lo_80, hi_80), sum, na.rm = TRUE))
+
+df_weekly |> 
+    filter(product == "iohexol 350 mg/ml 100 ml inj") |> 
+    ggplot(aes(x = week_of, y = .mean)) +
+    geom_line()
