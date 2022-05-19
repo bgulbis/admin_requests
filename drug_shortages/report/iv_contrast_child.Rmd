@@ -4,6 +4,9 @@ Row
 ### Inventory {.no-title}
 
 ```{r}
+x_min <- max(ts_data$date) - months(3)
+x_max <- max(df_fc_data_combo$date)
+
 x <- filter(ts_data, product == p)
 y <- filter(df_fc_data_combo, product == p) |> 
     mutate(.model = "A_Fcast")
@@ -18,7 +21,8 @@ plotly_fable(
     ytitle = "Quantity",
     width = NULL,
     height = NULL
-)
+) |> 
+    plotly::layout(xaxis = list(range = list(x_min, x_max)))
 ```
 
 > Click on the model name to display or hide it on the graph.

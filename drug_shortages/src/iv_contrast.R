@@ -10,7 +10,8 @@ library(fcasthelpr)
 
 f <- set_data_path("admin_requests", "drug_shortages")
 
-raw_orders <- read_excel(paste0(f, "raw/iv_contrast_orders_2019-2022.xlsx")) |> 
+raw_orders <- get_xlsx_data(path = paste0(f, "raw"), pattern = "iv_contrast_orders") |> 
+# raw_orders <- read_excel(paste0(f, "raw/iv_contrast_orders_2019-2022.xlsx")) |> 
     rename_all(str_to_lower)
 
 df_orders <- raw_orders |> 
@@ -184,17 +185,17 @@ write_rds(df_fc_data_combo, paste0(f, "final/df_fc_data_combo.Rds"))
 
 # weekly data -------------------------------------------------------------
 
-df_weekly <- ts_data |>
-    as_tibble() |>
-    mutate(.model = "Actual") |>
-    rename(.mean = dose_quantity) |>
-    bind_rows(df_fc_data_combo) |>
-    arrange(product, .model, date) |> 
-    mutate(week_of = floor_date(date, unit = "week")) |> 
-    group_by(product, week_of) |> 
-    summarize(across(c(.mean, lo_80, hi_80), sum, na.rm = TRUE))
-
-df_weekly |> 
-    filter(product == "iohexol 350 mg/ml 100 ml inj") |> 
-    ggplot(aes(x = week_of, y = .mean)) +
-    geom_line()
+# df_weekly <- ts_data |>
+#     as_tibble() |>
+#     mutate(.model = "Actual") |>
+#     rename(.mean = dose_quantity) |>
+#     bind_rows(df_fc_data_combo) |>
+#     arrange(product, .model, date) |> 
+#     mutate(week_of = floor_date(date, unit = "week")) |> 
+#     group_by(product, week_of) |> 
+#     summarize(across(c(.mean, lo_80, hi_80), sum, na.rm = TRUE))
+# 
+# df_weekly |> 
+#     filter(product == "iohexol 350 mg/ml 100 ml inj") |> 
+#     ggplot(aes(x = week_of, y = .mean)) +
+#     geom_line()
