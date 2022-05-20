@@ -17,7 +17,28 @@ raw_orders <- get_xlsx_data(path = paste0(f, "raw"), pattern = "iv_contrast_orde
 # raw_orders <- read_excel(paste0(f, "raw/iv_contrast_orders_2019-2022.xlsx")) |> 
     rename_all(str_to_lower)
 
-# update_time <- file.info()$mtime
+
+# check for missing data --------------------------------------------------
+
+message(paste("Date updated through", format(max(raw_orders$order_datetime), "%m/%d/%Y")))
+
+first_day <- mdy("5/1/2022")
+last_day <- as.Date(max(raw_orders$order_datetime))
+
+all_days <- seq.Date(first_day, last_day, by = "day")
+
+chk_days <- raw_orders |> 
+    mutate(across(order_datetime, as.Date)) |> 
+    distinct(order_datetime) |> 
+    arrange(order_datetime) |> 
+    filter(order_datetime >= first_day)
+
+x <- tibble(days = all_days)
+
+if (nrow(chk_days) != length(all_days)) stop("Missing data for some days")
+
+
+# data tidying ------------------------------------------------------------
 
 df_orders <- raw_orders |> 
     mutate(date = floor_date(order_datetime, unit = "days")) |> 
@@ -56,6 +77,9 @@ ts_data <- df_orders_daily |>
 #     )
 # 
 # x <- accuracy(fit_test)
+
+
+# model data --------------------------------------------------------------
 
 fit_data <- ts_data |> 
     model(
