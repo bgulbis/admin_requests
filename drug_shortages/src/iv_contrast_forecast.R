@@ -20,7 +20,7 @@ raw_orders <- get_xlsx_data(path = paste0(f, "raw"), pattern = "iv_contrast_orde
 
 # check for missing data --------------------------------------------------
 
-message(paste("Date updated through", format(max(raw_orders$order_datetime), "%m/%d/%Y")))
+message(paste("Data updated through", format(max(raw_orders$order_datetime), "%m/%d/%Y")))
 
 first_day <- mdy("5/1/2022")
 last_day <- as.Date(max(raw_orders$order_datetime))
