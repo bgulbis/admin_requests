@@ -17,6 +17,8 @@ raw_orders <- get_xlsx_data(path = paste0(f, "raw"), pattern = "iv_contrast_orde
 # raw_orders <- read_excel(paste0(f, "raw/iv_contrast_orders_2019-2022.xlsx")) |> 
     rename_all(str_to_lower)
 
+# update_time <- file.info()$mtime
+
 df_orders <- raw_orders |> 
     mutate(date = floor_date(order_datetime, unit = "days")) |> 
     filter(!is.na(dose_quantity))
@@ -46,6 +48,15 @@ ts_data <- df_orders_daily |>
     fill_gaps(dose_quantity = 0L) |> 
     mutate(intervention = if_else(date >= intervention_start, TRUE, FALSE))
 
+# fit_test <- ts_data |> 
+#     model(
+#         VAR = VAR(dose_quantity),
+#         VAR_X = VAR(dose_quantity ~ intervention),
+#         VAR_XL = VAR(log(dose_quantity + 1) ~ intervention)
+#     )
+# 
+# x <- accuracy(fit_test)
+
 fit_data <- ts_data |> 
     model(
         # ARIMA = ARIMA(dose_quantity),
@@ -62,10 +73,23 @@ fit_data <- ts_data |>
             ETS(trend),
             ETS(season_week),
             ETS(remainder)
+        ),
+        ETS_DA = decomposition_model(
+            STL(dose_quantity),
+            ETS(trend),
+            ARIMA(season_week),
+            ARIMA(remainder)
+        ),
+        VAR = VAR(log(dose_quantity + 1) ~ intervention),
+        VAR_D = decomposition_model(
+            STL(dose_quantity),
+            VAR(trend),
+            VAR(season_week),
+            VAR(remainder)
         )
     ) |> 
     mutate(
-        Forecast = (ARIMA + ARIMA_D + ETS + ETS_D) / 4
+        Forecast = (ARIMA + ARIMA_D + ETS + ETS_D + ETS_D + ETS_DA + VAR + VAR_D) / 8
     )
 
 # x <- accuracy(fit_data)
@@ -190,8 +214,8 @@ df_fc_data_combo <- df_fc_data %>%
 
 # save data ---------------------------------------------------------------
 
-# write_rds(pred_days, "data/final/pred_days.Rds")
-# write_rds(update_time, "data/final/update_time.Rds")
+write_rds(pred_days, paste0(f, "final/pred_days.Rds"))
+# write_rds(update_time, paste0(f, "final/update_time.Rds"))
 write_rds(ts_data, paste0(f, "final/ts_data.Rds"))
 write_rds(df_fc_data_ind, paste0(f, "final/df_fc_data_ind.Rds"))
 write_rds(df_fc_data_combo, paste0(f, "final/df_fc_data_combo.Rds")) 

@@ -18,6 +18,8 @@ library(flexdashboard)
 ```{r}
 f <- mbohelpr::set_data_path("admin_requests", "drug_shortages")
 
+pred_days <- read_rds(paste0(f, "final/pred_days.Rds"))
+# update_time <- read_rds(paste0(f, "final/update_time.Rds"))
 ts_data <- read_rds(paste0(f, "final/ts_data.Rds"))
 df_fc_data_ind <- read_rds(paste0(f, "final/df_fc_data_ind.Rds"))
 df_fc_data_combo <- read_rds(paste0(f, "final/df_fc_data_combo.Rds"))
@@ -145,3 +147,47 @@ p <- "iodixanol 320 mg/ml 200 ml"
 
 ```
 
+About
+=====================================================
+
+### About the forecasts
+
+**Data updated through: `r format(max(ts_data$date), "%B %d, %Y")`**
+
+#### Methodology
+
+* Utilization is based on the number of vials removed from Pyxis or sent from pharmacy each day.
+* A forecast for the use of each IV contrast product over the next `r pred_days` days is made using an ensemble model. 
+
+#### Forecast models
+
+* An individual forecast is made for each mask using each of the following models: 
+    - ARIMA: Auto-Regressive Integrated Moving Average
+    - ARIMA_D: Seasonal decomposition of the utilization with an ARIMA forecast then performed on each of the individual components (trend, weekly seasonality, and remainder)
+    - ETS: Exponential Smoothing using state space models
+        + Hyndman, R.J., Koehler, A.B., Snyder, R.D., and Grose, S.; *International Journal of Forecasting* 2002. 18(3): 439-454
+    - ETS_D: Seasonal decomposition of the utilization with an ETS forecast then performed on each of the individual components (trend, weekly seasonality, and remainder)
+    - ETS_DA: Seasonal decomposition of the utilization with an ETS forecast performed on the trend and an ARIMA forecast performed on the weekly seasonality and remainder
+    - VAR: Vector Auto-Regression
+    - VAR_D: Seasonal decomposition of the utilization with an VAR forecast then performed on each of the individual components (trend, weekly seasonality, and remainder)
+* An ensemble forecast is then created by averaging the individual forecasts together.
+* Forecasts are made for the next `r pred_days` days (denoted by the line) with an 80% prediction interval (there is an 80% probability that the future value will be within the predication interval; denoted by the shaded area).
+
+#### References
+
+* Created with `r R.version.string`
+    - `r format(citation(), style = "html")`
+* Forecasts created using the following packages:
+    - `r format(citation("fable"), style = "html")`
+    - `r format(citation("tsibble"), style = "html")`
+* Dashboard and visualizations created using the following packages:
+    - `r format(citation("flexdashboard"), style = "html")`
+    - `r format(citation("plotly"), style = "html")`
+    - `r format(citation("tidyverse"), style = "html")`
+    - `r format(citation("readxl"), style = "html")`
+    - `r format(citation("tibble"), style = "html")`
+    - `r format(citation("dplyr"), style = "html")`
+    - `r format(citation("tidyr"), style = "html")`
+    - `r format(citation("lubridate"), style = "html")`
+
+> Created by Brian Gulbis, PharmD, BCPS (<brian.gulbis@memorialhermann.org>)
