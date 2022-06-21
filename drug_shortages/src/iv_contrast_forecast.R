@@ -69,8 +69,10 @@ ts_data <- df_orders_daily |>
     fill_gaps(dose_quantity = 0L) |> 
     mutate(intervention = if_else(date >= intervention_start, TRUE, FALSE))
 
-# fit_test <- ts_data |> 
+# fit_test <- ts_data |>
 #     model(
+#         ARIMA = ARIMA(dose_quantity ~ intervention),
+#         ARIMA_L = ARIMA(log(dose_quantity + 1) ~ intervention)
 #         VAR = VAR(dose_quantity),
 #         VAR_X = VAR(dose_quantity ~ intervention),
 #         VAR_XL = VAR(log(dose_quantity + 1) ~ intervention)
@@ -129,64 +131,14 @@ xreg_data <- df_orders_daily |>
     full_join(xreg_intervention, by = character()) |> 
     as_tsibble(key = product, index = date) 
     
-fc_data <- forecast(fit_data, h = pred_days, new_data = xreg_data)
+fc_data <- forecast(fit_data, new_data = xreg_data)
+# 
+# fc_test <- forecast(fit_test, new_data = xreg_data)
+# 
+# ggplot(fc_test, aes(x = date, y = .mean, color = .model)) +
+#     geom_line() +
+#     facet_grid(vars(product))
 
-# df_decomp <- ts_data |> 
-#     model(STL(dose_quantity)) |> 
-#     components()
-# 
-# df_confint <- fc_data |> 
-#     hilo() |> 
-#     unpack_hilo(c(`80%`, `95%`)) |> 
-#     rename(
-#         lo_80 = `80%_lower`,
-#         hi_80 = `80%_upper`,
-#         lo_95 = `95%_lower`,
-#         hi_95 = `95%_upper`
-#     )
-
-# m <- df_prod_select$product 
-# 
-# plot_train <- function(fc) {
-#     button_list <- purrr::map(1:length(m), function(x){
-#         list(
-#             method = "restyle",
-#             args = list("transforms[0].value", m[x]),
-#             label = m[x]
-#         )
-#     })
-#     
-#     ts_data |>
-#         as_tibble() |>
-#         mutate(.model = "Actual") |>
-#         rename(.mean = dose_quantity) |>
-#         bind_rows(fc) |>
-#         select(-dose_quantity) |>
-#         arrange(product, .model, date) |>
-#         plotly::plot_ly(
-#             x = ~date,
-#             y = ~.mean,
-#             color = ~.model,
-#             colors = "Dark2",
-#             customdata = ~product,
-#             transforms = list(
-#                 list(
-#                     type = "filter",
-#                     target = "customdata",
-#                     operation = '=',
-#                     value = m[1]
-#                 )
-#             )
-#         ) |>
-#         plotly::add_lines() |>
-#         plotly::layout(
-#             xaxis = list(showgrid = FALSE),
-#             yaxis = list(showgrid = FALSE, rangemode = "tozero"),
-#             updatemenus = list(list(buttons = button_list))
-#         )
-# }
-# 
-# plot_train(fc_data)
 
 df_fc_data <- fc_data %>%
     filter(!is.na(.mean)) %>%
