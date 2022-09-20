@@ -66,7 +66,7 @@ ts_data <- df_orders_daily |>
     semi_join(df_prod_select, by = "product") |> 
     mutate(across(date, as.Date)) |> 
     as_tsibble(key = product, index = date) |> 
-    fill_gaps(dose_quantity = 0L) |> 
+    fill_gaps(dose_quantity = 0L, .full = TRUE) |> 
     mutate(intervention = if_else(date >= intervention_start, TRUE, FALSE))
 
 # fit_test <- ts_data |>
