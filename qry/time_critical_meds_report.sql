@@ -38,7 +38,8 @@ WITH DOSES AS (
 		)
 		AND CLINICAL_EVENT.EVENT_END_DT_TM BETWEEN
 			DECODE(
-				@Prompt('Choose date range', 'A', {'Last Month', 'User-defined'}, mono, free, , , User:0),
+				@Prompt('Choose date range', 'A', {'Last Week', 'Last Month', 'User-defined'}, mono, free, , , User:0),
+				'Last Week', pi_to_gmt(TRUNC(SYSDATE - 7, 'DAY'), 'America/Chicago'),
 				'Last Month', pi_to_gmt(TRUNC(ADD_MONTHS(SYSDATE, -1), 'MONTH'), 'America/Chicago'),
 				'User-defined', pi_to_gmt(
 					TO_DATE(
@@ -49,7 +50,8 @@ WITH DOSES AS (
 				)
 			)
 			AND DECODE(
-				@Prompt('Choose date range', 'A', {'Last Month', 'User-defined'}, mono, free, , , User:0),
+				@Prompt('Choose date range', 'A', {'Last Week', 'Last Month', 'User-defined'}, mono, free, , , User:0),
+				'Last Week', pi_to_gmt(TRUNC(SYSDATE, 'DAY') - 1/86400, 'America/Chicago'),
 				'Last Month', pi_to_gmt(TRUNC(SYSDATE, 'MONTH') - 1/86400, 'America/Chicago'),
 				'User-defined', pi_to_gmt(
 					TO_DATE(
