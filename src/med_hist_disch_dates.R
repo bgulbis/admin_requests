@@ -23,3 +23,10 @@ df_fins_feb <- read_excel(paste0(f, "raw/med_hist_disch_dates_feb.xlsx")) |>
 
 df_fins_mar <- get_xlsx_data(paste0(f, "raw"), "med_hist_disch_dates_mar") |> 
     rename_all(str_to_lower)
+
+l <- list(
+    "February" = df_fins_feb,
+    "March" = df_fins_mar
+)
+
+write.xlsx(l, paste0(f, "final/med_hist_disch_dates.xlsx"), overwrite = TRUE)
