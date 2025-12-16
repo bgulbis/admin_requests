@@ -8,7 +8,7 @@ library(themebg)
 f <- set_data_path("admin_requests", "heparin_drips")
 
 raw_heparin <- read_excel(
-    paste0(f, "raw/heparin_drip_heparin.xlsx"),
+    paste0(f, "raw/meds_heparin.xlsx"),
     skip = 11,
     col_names = c("range_start", "range_end", "mrn", "encounter_csn", "order_id", "med_datetime", "order",
                   "dose", "dose_unit", "route", "freq", "action", "prn", "nurse_unit")
@@ -18,7 +18,7 @@ raw_heparin <- read_excel(
     mutate(across(order, str_to_lower))
 
 raw_enox <- read_excel(
-    paste0(f, "raw/heparin_drip_enoxaparin.xlsx"),
+    paste0(f, "raw/meds_anticoag.xlsx"),
     skip = 11,
     col_names = c("range_start", "range_end", "mrn", "encounter_csn", "order_id", "med_datetime", "order",
                   "dose", "dose_unit", "route", "freq", "action", "prn", "nurse_unit")
@@ -28,15 +28,25 @@ raw_enox <- read_excel(
     mutate(across(order, str_to_lower))
 
 raw_ptt <- read_excel(
-    paste0(f, "raw/heparin_drip_ptt.xlsx"),
+    paste0(f, "raw/labs_ptt.xlsx"),
     skip = 11,
-    col_names = c("range_start", "range_end", "mrn", "lab_datetime", "lab", "result", "nurse_unit", "result_unit")
+    col_names = c("range_start", "range_end", "mrn", "lab_datetime", "lab", "result", "result_unit", "nurse_unit")
 ) |>
     rename_all(str_to_lower) |>
     select(-range_start, -range_end) |>
     mutate(across(lab, str_to_lower))
 
-zz_loc <- distinct(raw_heparin, nurse_unit) |> arrange(nurse_unit)
+raw_hep_vol <- read_excel(
+    paste0(f, "raw/flow_heparin_vol.xlsx"),
+    skip = 11,
+    col_names = c("range_start", "range_end", "mrn", "encounter_csn", "taken_date", "taken_time", "event", 
+                  "volume", "nurse_unit")
+) |>
+    rename_all(str_to_lower) |> 
+    mutate(vital_datetime = ymd_hm(paste(taken_date, taken_time))) |> 
+    select(-range_start, -range_end, -taken_date, -taken_time) 
+
+zz_loc <- distinct(raw_ptt, nurse_unit) |> arrange(nurse_unit)
 
 l_hvi <- c("HVI 4 CARDIAC CARE UNIT", "HVI 4 CARDIAC IMU", "HVI 5 HEART FAILURE ICU", "HVI 5 HEART FAILURE IMU",
            "HVI 8 CARDIOVASCULAR ICU", "HVI 8 CARDIOVASCULAR IMU")
@@ -53,7 +63,7 @@ l_jones <- c("TMC JONES 3 NEURO IMU", "TMC JONES 3 SPECIALTY SURGERY", "TMC JONE
              "TMC JONES 6 TRAUMA", "TMC JONES 7 ELECTIVE NEURO ICU", "TMC JONES 8 CLINICAL OBSERVATION", 
              "TMC JONES 8 TRANSPLANT SURGICAL CARE", "TMC JONES 9 E BARIATRIC/GENERAL SURGERY", "TMC JONES 9 E STROKE OVERFLOW")
 
-df_drip_dates <- raw_heparin |> 
+df_hep_bags <- raw_heparin |> 
     arrange(mrn, encounter_csn, med_datetime) |> 
     filter(
         dose_unit == "Units/kg/hr",
@@ -72,6 +82,39 @@ df_drip_dates <- raw_heparin |>
         across(location, \(x) factor(x, levels = c("hvi", "sarofim", "jones", "cullen", "emergency", "other")))
     ) |> 
     distinct(mrn, encounter_csn, med_date, location)
+
+df_drip_first <- df_hep_bags |> 
+    arrange(mrn, encounter_csn, med_date) |> 
+    distinct(mrn, encounter_csn, med_date) |> 
+    rename(heparin_date = med_date)
+
+df_hep_vol <- raw_hep_vol |> 
+    arrange(mrn, encounter_csn, vital_datetime) |> 
+    mutate(
+        vital_date = floor_date(vital_datetime, unit = "days"),
+        location = case_when(
+            nurse_unit %in% l_hvi ~ "hvi",
+            nurse_unit %in% l_sarofim ~ "sarofim",
+            nurse_unit %in% l_cullen ~ "cullen",
+            nurse_unit == "TMC EMERGENCY" ~ "emergency",
+            nurse_unit %in% l_jones ~ "jones",
+            .default = "other"
+        ),
+        across(location, \(x) factor(x, levels = c("hvi", "sarofim", "jones", "cullen", "emergency", "other")))
+    ) |> 
+    inner_join(df_drip_first, by = c("mrn", "encounter_csn"), relationship = "many-to-many") |> 
+    filter(vital_date >= heparin_date) |> 
+    distinct(mrn, encounter_csn, vital_date, location) |> 
+    rename(med_date = vital_date)
+
+df_drip_dates <- df_hep_bags |> 
+    bind_rows(df_hep_vol) |> 
+    distinct(mrn, encounter_csn, med_date, location)
+
+df_drip_last <- df_drip_dates |> 
+    arrange(mrn, encounter_csn, desc(med_date)) |> 
+    distinct(mrn, encounter_csn, med_date) |> 
+    rename(heparin_date = med_date)
 
 df_ptt <- raw_ptt |> 
     arrange(mrn, lab_datetime) |> 
@@ -109,11 +152,6 @@ df_ptt <- raw_ptt |>
                                                    "Saturday", "Sunday")))
     ) |> 
     inner_join(df_drip_dates, by = c("mrn", "lab_date" = "med_date"), relationship = "many-to-many")
-
-df_drip_last <- df_drip_dates |> 
-    arrange(mrn, encounter_csn, desc(med_date)) |> 
-    distinct(mrn, encounter_csn, med_date) |> 
-    rename(heparin_date = med_date)
 
 df_enox_after <- raw_enox |> 
     mutate(med_date = floor_date(med_datetime, unit = "days")) |>
@@ -163,8 +201,7 @@ data_anticoag <- data_patient_days |>
 data_summary <- df_ptt |> 
     filter(
         loc_lab != "other",
-        location != "other",
-        lab_date > mdy("9/7/2025")
+        location != "other"
     ) 
 
 data_sum_patients <- data_summary |> 
@@ -198,6 +235,8 @@ data_sum_shift <- data_summary |>
     )
 
 g_ptt_range <- df_ptt |> 
+    mutate(across(result_groups, fct_rev)) |> 
+    filter(loc_lab != "other", !is.na(result_groups)) |>
     ggplot(aes(x = lab_date)) +
     geom_bar(aes(fill = result_groups)) +
     scale_fill_brewer(palette = "Set1") +
@@ -248,3 +287,44 @@ g_pts <- df_drip_dates |>
     # scale_color_brewer(palette = "Set1") +
     theme_bg()
 
+d_ptt_range_daily <- data_summary |> 
+    filter(!is.na(result_groups)) |> 
+    count(lab_date, result_groups, name = "num_ptt") |> 
+    pivot_wider(names_from = result_groups, values_from = num_ptt)
+
+d_ptt_loc_daily <- data_summary |> 
+    count(lab_date, loc_lab, name = "num_ptt") |> 
+    mutate(
+        across(loc_lab, str_to_title),
+        across(loc_lab, \(x) if_else(x == "Hvi", "HVI", x))
+    ) |> 
+    pivot_wider(names_from = loc_lab, values_from = num_ptt)
+
+d_loc <- data_summary |> 
+    count(lab_date, loc_lab, name = "num_ptt") |> 
+    arrange(loc_lab, num_ptt) |> 
+    mutate(
+        across(loc_lab, str_to_title),
+        across(loc_lab, \(x) if_else(x == "Hvi", "HVI", x))
+    ) |> 
+    select(-lab_date)
+
+d_weekday <- data_summary |> 
+    count(lab_date, day_week, name = "num_ptt") |> 
+    arrange(day_week, num_ptt) |> 
+    select(-lab_date)
+
+d_shift <- data_summary |> 
+    count(lab_date, time_day, name = "num_ptt") |> 
+    arrange(time_day, num_ptt) |> 
+    select(-lab_date)
+
+l <- list(
+    "location" = d_loc,
+    "weekday" = d_weekday,
+    "shift" = d_shift,
+    "ptt_range_daily" = d_ptt_range_daily,
+    "ptt_loc_daily" = d_ptt_loc_daily
+)
+
+write.xlsx(l, paste0(f, "final/data_for_boxplot.xlsx"), overwrite = TRUE)
