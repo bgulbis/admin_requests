@@ -63,6 +63,8 @@ l_jones <- c("TMC JONES 3 NEURO IMU", "TMC JONES 3 SPECIALTY SURGERY", "TMC JONE
              "TMC JONES 6 TRAUMA", "TMC JONES 7 ELECTIVE NEURO ICU", "TMC JONES 8 CLINICAL OBSERVATION", 
              "TMC JONES 8 TRANSPLANT SURGICAL CARE", "TMC JONES 9 E BARIATRIC/GENERAL SURGERY", "TMC JONES 9 E STROKE OVERFLOW")
 
+lvl_loc <- c("HVI", "Sarofim", "Jones", "Cullen", "Emergency", "Other")
+
 df_hep_bags <- raw_heparin |> 
     arrange(mrn, encounter_csn, med_datetime) |> 
     filter(
@@ -72,14 +74,14 @@ df_hep_bags <- raw_heparin |>
     mutate(
         med_date = floor_date(med_datetime, unit = "days"),
         location = case_when(
-            nurse_unit %in% l_hvi ~ "hvi",
-            nurse_unit %in% l_sarofim ~ "sarofim",
-            nurse_unit %in% l_cullen ~ "cullen",
-            nurse_unit == "TMC EMERGENCY" ~ "emergency",
-            nurse_unit %in% l_jones ~ "jones",
-            .default = "other"
+            nurse_unit %in% l_hvi ~ "HVI",
+            nurse_unit %in% l_sarofim ~ "Sarofim",
+            nurse_unit %in% l_cullen ~ "Cullen",
+            nurse_unit == "TMC EMERGENCY" ~ "Emergency",
+            nurse_unit %in% l_jones ~ "Jones",
+            .default = "Other"
         ),
-        across(location, \(x) factor(x, levels = c("hvi", "sarofim", "jones", "cullen", "emergency", "other")))
+        across(location, \(x) factor(x, levels = lvl_loc))
     ) |> 
     distinct(mrn, encounter_csn, med_date, location)
 
@@ -93,14 +95,14 @@ df_hep_vol <- raw_hep_vol |>
     mutate(
         vital_date = floor_date(vital_datetime, unit = "days"),
         location = case_when(
-            nurse_unit %in% l_hvi ~ "hvi",
-            nurse_unit %in% l_sarofim ~ "sarofim",
-            nurse_unit %in% l_cullen ~ "cullen",
-            nurse_unit == "TMC EMERGENCY" ~ "emergency",
-            nurse_unit %in% l_jones ~ "jones",
-            .default = "other"
+            nurse_unit %in% l_hvi ~ "HVI",
+            nurse_unit %in% l_sarofim ~ "Sarofim",
+            nurse_unit %in% l_cullen ~ "Cullen",
+            nurse_unit == "TMC EMERGENCY" ~ "Emergency",
+            nurse_unit %in% l_jones ~ "Jones",
+            .default = "Other"
         ),
-        across(location, \(x) factor(x, levels = c("hvi", "sarofim", "jones", "cullen", "emergency", "other")))
+        across(location, \(x) factor(x, levels = lvl_loc))
     ) |> 
     inner_join(df_drip_first, by = c("mrn", "encounter_csn"), relationship = "many-to-many") |> 
     filter(vital_date >= heparin_date) |> 
@@ -133,14 +135,14 @@ df_ptt <- raw_ptt |>
         ),
         across(result_groups, \(x) factor(x, levels = c("<50", "50-89", "90-119", "120-199", ">200"))),
         loc_lab = case_when(
-            nurse_unit %in% l_hvi ~ "hvi",
-            nurse_unit %in% l_sarofim ~ "sarofim",
-            nurse_unit %in% l_cullen ~ "cullen",
-            nurse_unit == "TMC EMERGENCY" ~ "emergency",
-            nurse_unit %in% l_jones ~ "jones",
-            .default = "other"
+            nurse_unit %in% l_hvi ~ "HVI",
+            nurse_unit %in% l_sarofim ~ "Sarofim",
+            nurse_unit %in% l_cullen ~ "Cullen",
+            nurse_unit == "TMC EMERGENCY" ~ "Emergency",
+            nurse_unit %in% l_jones ~ "Jones",
+            .default = "Other"
         ),
-        across(loc_lab, \(x) factor(x, levels = c("hvi", "sarofim", "jones", "cullen", "emergency", "other"))),
+        across(loc_lab, \(x) factor(x, levels = lvl_loc)),
         time_day = case_when(
             hour(lab_datetime) >= 16 ~ "1600-2359",
             hour(lab_datetime) >= 8 ~ "0800-1559",
@@ -182,7 +184,7 @@ df_oac_after <- raw_enox |>
     )    
 
 data_patient_days <- df_drip_dates |> 
-    filter(location != "other") |> 
+    filter(location != "Other") |> 
     summarize(
         heparin_days = n(),
         .by = c(mrn, encounter_csn)
@@ -200,9 +202,13 @@ data_anticoag <- data_patient_days |>
 
 data_summary <- df_ptt |> 
     filter(
-        loc_lab != "other",
-        location != "other"
-    ) 
+        loc_lab != "Other",
+        location != "Other",
+        !is.na(result)
+    ) |> 
+    select(mrn, encounter_csn, everything(), -location)
+
+write.xlsx(data_summary, paste0(f, "final/heparin_ptt_data.xlsx"), overwrite = TRUE)
 
 data_sum_patients <- data_summary |> 
     distinct(mrn, lab_date) |> 
@@ -210,6 +216,17 @@ data_sum_patients <- data_summary |>
     summarize(across(num_patients, list(mean = mean, sd = sd)))
 
 data_sum_ptt <- data_summary |> 
+    count(lab_date, name = "num_ptt") |> 
+    summarize(across(num_ptt, list(mean = mean, sd = sd)))
+
+data_sum_ptt_gt200 <- data_summary |> 
+    filter(result_groups == ">200") |> 
+    count(lab_date, name = "num_ptt") |> 
+    summarize(across(num_ptt, list(mean = mean, sd = sd)))
+
+data_sum_patients_gt200 <- data_summary |> 
+    filter(result_groups == ">200") |> 
+    distinct(mrn, encounter_csn, lab_date) |> 
     count(lab_date, name = "num_ptt") |> 
     summarize(across(num_ptt, list(mean = mean, sd = sd)))
 
@@ -234,58 +251,58 @@ data_sum_shift <- data_summary |>
         .by = time_day
     )
 
-g_ptt_range <- df_ptt |> 
-    mutate(across(result_groups, fct_rev)) |> 
-    filter(loc_lab != "other", !is.na(result_groups)) |>
-    ggplot(aes(x = lab_date)) +
-    geom_bar(aes(fill = result_groups)) +
-    scale_fill_brewer(palette = "Set1") +
-    theme_bg()    
-
-g_ptt_range_totals <- df_ptt |> 
-    # mutate(across(loc_lab, fct_rev)) |> 
-    filter(loc_lab != "other", !is.na(result_groups)) |>
-    ggplot(aes(x = result_groups)) +
-    geom_bar() +
-    # scale_fill_brewer(palette = "Set1") +
-    theme_bg() 
-
-g_ptt_loc <- df_ptt |> 
-    filter(loc_lab != "other") |> 
-    mutate(across(loc_lab, fct_rev)) |> 
-    ggplot(aes(x = lab_date)) +
-    geom_bar(aes(fill = loc_lab)) +
-    scale_fill_brewer(palette = "Set1") +
-    theme_bg()   
-
-g_ptt_loc_totals <-data_summary |> 
-    count(lab_date, loc_lab, name = "num_ptt") |> 
-    ggplot(aes(x = loc_lab, y = num_ptt)) +
-    geom_boxplot() +
-    # scale_fill_brewer(palette = "Set1") +
-    theme_bg() 
-
-g_ptt_weekday <- data_summary |> 
-    count(lab_date, day_week, name = "num_ptt") |> 
-    ggplot(aes(x = day_week, y = num_ptt)) +
-    geom_boxplot() +
-    # scale_fill_brewer(palette = "Set1") +
-    theme_bg() 
-
-g_ptt_shift <- data_summary |> 
-    count(lab_date, time_day, name = "num_ptt") |> 
-    ggplot(aes(x = time_day, y = num_ptt)) +
-    geom_boxplot() +
-    # scale_fill_brewer(palette = "Set1") +
-    theme_bg()  
-
-g_pts <- df_drip_dates |> 
-    filter(location != "other") |> 
-    ggplot(aes(x = med_date)) +
-    geom_bar(aes(fill = location)) +
-    scale_fill_brewer(palette = "Set1") +
-    # scale_color_brewer(palette = "Set1") +
-    theme_bg()
+# g_ptt_range <- df_ptt |> 
+#     mutate(across(result_groups, fct_rev)) |> 
+#     filter(loc_lab != "other", !is.na(result_groups)) |>
+#     ggplot(aes(x = lab_date)) +
+#     geom_bar(aes(fill = result_groups)) +
+#     scale_fill_brewer(palette = "Set1") +
+#     theme_bg()    
+# 
+# g_ptt_range_totals <- df_ptt |> 
+#     # mutate(across(loc_lab, fct_rev)) |> 
+#     filter(loc_lab != "other", !is.na(result_groups)) |>
+#     ggplot(aes(x = result_groups)) +
+#     geom_bar() +
+#     # scale_fill_brewer(palette = "Set1") +
+#     theme_bg() 
+# 
+# g_ptt_loc <- df_ptt |> 
+#     filter(loc_lab != "other") |> 
+#     mutate(across(loc_lab, fct_rev)) |> 
+#     ggplot(aes(x = lab_date)) +
+#     geom_bar(aes(fill = loc_lab)) +
+#     scale_fill_brewer(palette = "Set1") +
+#     theme_bg()   
+# 
+# g_ptt_loc_totals <-data_summary |> 
+#     count(lab_date, loc_lab, name = "num_ptt") |> 
+#     ggplot(aes(x = loc_lab, y = num_ptt)) +
+#     geom_boxplot() +
+#     # scale_fill_brewer(palette = "Set1") +
+#     theme_bg() 
+# 
+# g_ptt_weekday <- data_summary |> 
+#     count(lab_date, day_week, name = "num_ptt") |> 
+#     ggplot(aes(x = day_week, y = num_ptt)) +
+#     geom_boxplot() +
+#     # scale_fill_brewer(palette = "Set1") +
+#     theme_bg() 
+# 
+# g_ptt_shift <- data_summary |> 
+#     count(lab_date, time_day, name = "num_ptt") |> 
+#     ggplot(aes(x = time_day, y = num_ptt)) +
+#     geom_boxplot() +
+#     # scale_fill_brewer(palette = "Set1") +
+#     theme_bg()  
+# 
+# g_pts <- df_drip_dates |> 
+#     filter(location != "other") |> 
+#     ggplot(aes(x = med_date)) +
+#     geom_bar(aes(fill = location)) +
+#     scale_fill_brewer(palette = "Set1") +
+#     # scale_color_brewer(palette = "Set1") +
+#     theme_bg()
 
 d_ptt_range_daily <- data_summary |> 
     filter(!is.na(result_groups)) |> 
@@ -294,19 +311,24 @@ d_ptt_range_daily <- data_summary |>
 
 d_ptt_loc_daily <- data_summary |> 
     count(lab_date, loc_lab, name = "num_ptt") |> 
-    mutate(
-        across(loc_lab, str_to_title),
-        across(loc_lab, \(x) if_else(x == "Hvi", "HVI", x))
-    ) |> 
+    # mutate(
+    #     across(loc_lab, str_to_title),
+    #     across(loc_lab, \(x) if_else(x == "Hvi", "HVI", x))
+    # ) |> 
     pivot_wider(names_from = loc_lab, values_from = num_ptt)
 
 d_loc <- data_summary |> 
     count(lab_date, loc_lab, name = "num_ptt") |> 
     arrange(loc_lab, num_ptt) |> 
-    mutate(
-        across(loc_lab, str_to_title),
-        across(loc_lab, \(x) if_else(x == "Hvi", "HVI", x))
-    ) |> 
+    # mutate(
+    #     across(loc_lab, str_to_title),
+    #     across(loc_lab, \(x) if_else(x == "Hvi", "HVI", x))
+    # ) |> 
+    select(-lab_date)
+
+d_range <- data_summary |> 
+    count(lab_date, result_groups, name = "num_ptt") |> 
+    arrange(result_groups, num_ptt) |> 
     select(-lab_date)
 
 d_weekday <- data_summary |> 
@@ -323,6 +345,7 @@ l <- list(
     "location" = d_loc,
     "weekday" = d_weekday,
     "shift" = d_shift,
+    "range" = d_range,
     "ptt_range_daily" = d_ptt_range_daily,
     "ptt_loc_daily" = d_ptt_loc_daily
 )
